@@ -1,0 +1,9 @@
+{
+  "title": "Park and leave",
+  "hints": [
+    "You need to answer two lookups quickly: who is in a spot, and where is a plate. That suggests two dicts.",
+    "Keep `spots: dict[str, str | None]` (spot id to the plate in it, or None when empty) and `parked: dict[str, str]` (plate to spot id). Update both on every park and leave.",
+    "Validate before mutating: `park` checks `spot_id in spots`, `spots[spot_id] is None`, and `plate not in parked`, and only then writes. `leave` is `parked.pop(plate, None)` plus clearing the spot.",
+    "`free_spots` is `sorted(s for s, plate in spots.items() if plate is None)`."
+  ]
+}

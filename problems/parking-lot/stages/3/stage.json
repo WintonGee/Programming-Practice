@@ -1,0 +1,9 @@
+{
+  "title": "Vehicle sizes",
+  "hints": [
+    "A spot now has two facts (its size and who is in it), and a stay needs the vehicle type to be priced. Promote both to small records.",
+    "Map names to ranks so 'big enough' is a number comparison: `SIZE_RANK = {\"small\": 0, \"medium\": 1, \"large\": 2}` and `MIN_RANK = {\"motorcycle\": 0, \"car\": 1, \"truck\": 2}`. A vehicle fits when `SIZE_RANK[spot.size] >= MIN_RANK[vehicle]`.",
+    "For `park_auto`, the best spot is the minimum of the free fitting spots under the key `(SIZE_RANK[spot.size], spot_id)`. Tuple keys give you 'smallest size, then lowest id' in one `min`.",
+    "Keep `park_auto` honest by delegating: find the spot id, then call your own `park` so the validation and bookkeeping live in one place. Store `vehicle` on the stay and look the rate up from it in your fee helper."
+  ]
+}

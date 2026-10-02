@@ -14,14 +14,15 @@ Arguments (all optional): a theme or slug, a difficulty, a stage count, a number
 - Read `docs/AUTHORING.md` and `docs/problem-ideas.md`.
 - Read **every** file of the exemplar `problems/session-timer/` (problem.json, starter.py, and each stage's prompt.md, stage.json, tests.py, solution.py). New problems mirror its structure, tone, prompt format, test style, and hint ladder.
 - Read `src/runtime/python/harness.py` (`FakeClock`, `raises`) and skim `src/runtime/python/runner.py` (how failures are reported).
-- List `problems/` so you don't duplicate a slug or a theme.
+- List `problems/` so you don't duplicate a slug or a theme. A theme overlaps if a learner would reuse more than about half of an existing problem's solution; pick a different arc if so.
 
 ## 2. Design the arc before writing files
 
 Write a short plan: class name, then for each stage its title, new/changed methods with full signatures, and the one idea that stage adds. A good arc:
 
 - **Stage 1** is approachable in 15–20 minutes: a dict plus validation.
-- **Each later stage forces a new data structure or a refactor** (an index, a heap, intervals, an event log, snapshots), not just one more method. The last stage usually needs history ("as of time t") or undo, which punishes stage-1 shortcuts.
+- **Earlier tests keep running, so a later stage can't redefine behavior an earlier stage tested.** If stage 3 needs to change something, leave it unstated (and untested) earlier, or state it as an assumption ("`begin()` is never called while a transaction is open"). The same applies to signatures: a method's return type never changes across stages, and existing calls must keep working. Extend with new methods or optional parameters with defaults.
+- **Each later stage forces a new data structure or a refactor** (an index, a heap, intervals, an event log, snapshots), not just one more method. The last stage usually needs history ("as of time t"), undo/snapshots, or a cross-cutting query that punishes stage-1 shortcuts.
 - **Realistic signatures and conventions**: CodeSignal-style problems usually return `None`/`False` for invalid operations; CoderPad-style ones usually raise. Pick one per problem and state it.
 - **Time** comes from explicit integer timestamps or an injected clock (`FakeClock`). Never the wall clock. Money is integer cents.
 - Easy problems: 3 stages, gentle stage 1. Medium: 4 stages. Hard: 4 stages with a demanding final stage.
@@ -38,7 +39,7 @@ This creates every file with `TODO(author)` placeholders. The verifier rejects a
 
 - `problem.json`: real tags (3–4), a summary hinting at the evolution, an honest `estimatedMinutes`.
 - `starter.py`: the stage-1 skeleton. Every method raises `NotImplementedError` with a one-line comment. `main()` only prints a hello line and must not construct the class.
-- `stages/N/prompt.md`: no top-level heading. Open with an intro paragraph (stage 1) or what changed (later stages), then an `### Operations` table (Method | Behavior), optionally `### Rules`, then an `### Example` python block with results as comments. Later stages say "All Stage 1–(N-1) behavior still applies."
+- `stages/N/prompt.md`: no top-level heading. Open with an intro paragraph (stage 1) or what changed (later stages), then an `### Operations` table (Method | Behavior; later stages use `### New operations` / `### Changed operation(s)`), optionally `### Rules`, then an `### Example` python block with results as comments. Later stages say "All Stage 1–(N-1) behavior still applies."
 - `stages/N/stage.json`: a short title and 3–4 progressive hints (nudge, then technique, then near-solution). Inline `code` is fine.
 - `stages/N/tests.py`: 8–12 `def test_*():` functions. Each has a one-line docstring, which the UI shows as the test's description.
   - Write `assert actual == expected`, with the actual value on the left.
@@ -46,6 +47,7 @@ This creates every file with `TODO(author)` placeholders. The verifier rejects a
   - Helpers must not start with `test_`.
   - Cover edge cases on purpose: empty input, zero, ties, inclusive/exclusive boundaries, unknown ids, idempotency, ordering.
   - Keep it deterministic: no randomness, and no reliance on dict ordering unless the spec defines it.
+- When writing a solution reveals a bug class a learner could hit (like a rollback that logs its own restores), add a test that catches it. The 8–12 range is a guide, not a cap.
 - `stages/N/solution.py`: a complete standalone reference passing stages 1..N. Write it the way you'd want a learner to study it: idiomatic, dataclasses and type hints, Python 3.11-compatible, no cleverness. It evolves from the previous stage's solution.
 - **Every behavior a test checks must be stated in that stage's prompt or an earlier one.** In interview mode the learner sees only prompts, so an unstated rule is a bug.
 
@@ -61,7 +63,7 @@ This must print `All 1 problems verified.` It checks four things:
 - each stage's solution passes stages 1..N
 - each stage's solution fails at least one test of the next stage
 
-It runs in the same Pyodide runtime as the browser. Fix the content and rerun; never weaken a test just to make the gate pass.
+It runs in the same Pyodide runtime as the browser. Fix the content and rerun; never weaken a test just to make the gate pass. Before trusting a number in a prompt example or test, compute it by running the example against your reference solution in Python (`python3 -c ...` or a scratch script) — hand arithmetic is the most common authoring bug.
 
 ## 6. Gate: independent content review
 
@@ -96,4 +98,4 @@ This builds the site and walks every stage in a browser: copy the solution, past
 
 ## Several problems at once
 
-Author in parallel with at most 2–3 `builder` agents, one slug each, so no two agents share a directory. Give each this skill's steps 1–5 verbatim as its brief, plus its assigned idea. Run steps 6–8 yourself per problem as each finishes. Playwright runs one at a time, never in parallel.
+Author in parallel with at most 2–3 `builder` agents, one slug each, so no two agents share a directory. Scaffold every slug yourself first (sequentially) so each gets a unique `order`; the agents then fill the files. Give each this skill's steps 1–5 verbatim as its brief, plus its assigned idea. Run steps 6–8 yourself per problem as each finishes. Playwright runs one at a time, never in parallel.

@@ -1,0 +1,9 @@
+{
+  "title": "Fees by duration",
+  "hints": [
+    "To price a stay you need to know when it started. Where does the park timestamp live in your current design?",
+    "Store a small record per parked vehicle, e.g. a `@dataclass Stay` with `spot_id` and `parked_at`, instead of just the spot id. Keep a separate `dict[str, int]` of totals paid per plate.",
+    "Put the pricing in one helper, `fee(minutes)`, and call it from both `quote` and `leave` so they can never disagree.",
+    "Started hours without floats: `-(-minutes // 60)` or `(minutes + 59) // 60`. Then `0 if minutes <= 15 else 300 * started_hours`."
+  ]
+}

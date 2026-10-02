@@ -1,0 +1,9 @@
+{
+  "title": "Snapshot reads",
+  "hints": [
+    "Your live data already contains uncommitted writes. Before storing anything, work out how to answer: what does `key` hold if every open transaction rolled back?",
+    "The undo logs already know. For a key touched by an open transaction, its committed value is the one recorded in the **outermost** log that mentions it; for every other key it is the live value.",
+    "Build the committed view by copying the live data and replaying the undo logs from innermost to outermost onto the copy, without touching the real store. Outer logs are applied last, so their older values win.",
+    "Store snapshots in a dict `id -> committed copy`, with a counter for the next id. `count_at_snapshot` can count matching values in the copy; `release_snapshot` is a `pop` with a default. Copying is O(n) per snapshot, which is fine here. Real databases avoid it by keeping a version history per key."
+  ]
+}

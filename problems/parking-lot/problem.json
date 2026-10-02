@@ -1,0 +1,8 @@
+{
+  "title": "Parking Lot",
+  "difficulty": "Medium",
+  "order": 8,
+  "tags": ["Design", "Hash Map", "Integer Money", "Time Intervals"],
+  "summary": "Park and retrieve vehicles by spot. Evolves through duration-based fees, vehicle sizes with automatic spot assignment, and revenue and occupancy history queries.",
+  "estimatedMinutes": 75
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Revenue and occupancy history",
+  "hints": [
+    "Running totals and a 'current plate' field forget the past. What would you need to have written down at the moment each event happened?",
+    "Keep a payment ledger: a list of `(timestamp, cents)` appended by every `leave`. Revenue is a filtered sum over it. Because timestamps never decrease, the ledger is already sorted, so `bisect` could find the window if it ever grew large.",
+    "For occupancy, give each spot a history list of stays: `[plate, parked_at, left_at]`, with `left_at = None` while the vehicle is still there. `leave` fills in `left_at` on the last entry instead of discarding it.",
+    "A stay covers `at` when `parked_at <= at` and (`left_at is None` or `at < left_at`). Scan the spot's history for the stay that covers `at`; at most one can, because a spot holds one vehicle at a time."
+  ]
+}

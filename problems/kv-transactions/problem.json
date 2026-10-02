@@ -1,0 +1,8 @@
+{
+  "title": "Transactional Key-Value Store",
+  "difficulty": "Medium",
+  "order": 9,
+  "tags": ["Design", "Hash Map", "Transactions", "Snapshots"],
+  "summary": "Build a string key-value store with value counts. Evolves through begin/commit/rollback, nested transactions, and read-only snapshots of committed data.",
+  "estimatedMinutes": 80
+}

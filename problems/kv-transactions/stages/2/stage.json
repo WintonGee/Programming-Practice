@@ -1,0 +1,9 @@
+{
+  "title": "Begin, commit, rollback",
+  "hints": [
+    "Rollback needs to know what each key held before the transaction touched it. What is the least you can remember to make that possible?",
+    "Keep an undo log: a dict `key -> value before the transaction`, using None for 'did not exist'. Writes still go straight to the data, so reads and `count` need no changes.",
+    "Record a key only the first time the transaction touches it: `log.setdefault(key, self.data.get(key))`. A second overwrite must not replace the original value.",
+    "Rollback replays the log: for each `key, old`, set it back to `old`, or delete it if `old is None`. Split the raw write (update data and counts) from the logging wrapper, so restores fix the counts without being logged again. Commit just discards the log."
+  ]
+}

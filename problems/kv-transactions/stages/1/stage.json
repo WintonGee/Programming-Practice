@@ -1,0 +1,9 @@
+{
+  "title": "Get, set, and count",
+  "hints": [
+    "A dict from key to value handles `set`, `get`, and `delete` directly. `dict.get(key)` already returns None for missing keys.",
+    "`count` can scan `self.data.values()`, but databases answer it from an index. Keep a second dict, `value -> number of keys holding it`, next to the data.",
+    "Every write touches the index twice: on `set`, decrement the old value's count (if the key existed) and increment the new one; on `delete`, decrement the removed value. A `collections.Counter` makes the bookkeeping short.",
+    "Overwriting a key with the value it already has must leave `count` unchanged. Decrement-then-increment handles that for free."
+  ]
+}

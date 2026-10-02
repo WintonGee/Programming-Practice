@@ -1,0 +1,9 @@
+{
+  "title": "Nested transactions",
+  "hints": [
+    "One undo log is no longer enough: each open transaction needs its own, and the innermost one is always the one you act on. Which data structure gives you 'the most recent one' cheaply?",
+    "Keep a stack (a list) of undo logs. `begin` pushes an empty dict, `rollback` pops and replays the top one, `depth` is `len(stack)`. Writes record into the top log only.",
+    "Commit pops the top log and merges it into the new top so the parent can still undo those changes. Merge with `setdefault`: if the parent already recorded a key, its older value is the one to keep.",
+    "When the outermost transaction commits there is no parent, so its log is simply dropped. Rollback restores must bypass logging entirely: after popping, the top of the stack is the parent, and recording into it would make the parent 'remember' the inner value."
+  ]
+}
