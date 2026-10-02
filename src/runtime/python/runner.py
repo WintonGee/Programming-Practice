@@ -115,8 +115,10 @@ def _exc_message(exc: BaseException) -> str:
 
 def _compare_message(exc: CompareFailure) -> str:
     left, op, right = _short(exc.left), exc.op, _short(exc.right)
-    if op == "==":
+    if op in ("==", "is"):
         base = f"expected {right}, got {left}"
+    elif op == "is not":
+        base = f"expected {left} not to be {right}"
     elif op == "in":
         base = f"expected {left} to be in {right}"
     elif op == "not in":

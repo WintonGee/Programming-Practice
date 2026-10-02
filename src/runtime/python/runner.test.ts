@@ -35,6 +35,11 @@ describe('run_tests', () => {
     })
   })
 
+  it('reports identity asserts like equality', () => {
+    const out = run('', 'def test_a():\n    assert "2" is None\n')
+    expect(out.results[0].message).toBe("expected None, got '2'")
+  })
+
   it('isolates module state between tests', () => {
     const code = 'items = []\ndef add(x):\n    items.append(x)\n    return len(items)'
     const tests = 'from solution import add\ndef test_one():\n    assert add(1) == 1\ndef test_two():\n    assert add(2) == 1\n'

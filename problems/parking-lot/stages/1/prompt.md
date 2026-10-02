@@ -1,6 +1,6 @@
 You're writing the software for a staffed parking garage. Attendants register the garage's **spots**, park vehicles in a specific spot, and look up where a vehicle is. Implement `ParkingLot`.
 
-Vehicles are identified by their license `plate` (a string); spots by a `spot_id` (a string such as `"A1"`). Mutating methods take a `timestamp` (integer minutes) as their first argument; timestamps **never decrease** from one call to the next. You won't need them yet, but later stages will.
+Vehicles are identified by their license `plate` (a string); spots by a `spot_id` (a string such as `"A1"`). `park` and `leave` take a `timestamp` (integer minutes) as their first argument; timestamps **never decrease** from one call to the next. You won't need them yet, but later stages will.
 
 ### Operations
 

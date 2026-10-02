@@ -148,3 +148,17 @@ def test_snapshots_are_independent():
     second = store.snapshot()
     store.release_snapshot(first)
     assert store.get_at_snapshot(second, "a") == "2"
+
+
+def test_snapshot_with_two_open_levels():
+    """A snapshot taken two transactions deep sees only committed data."""
+    store = KVStore()
+    store.set("a", "0")
+    store.begin()
+    store.set("a", "1")
+    store.begin()
+    store.set("a", "2")
+    store.set("b", "2")
+    snap = store.snapshot()
+    assert store.get_at_snapshot(snap, "a") == "0"
+    assert store.get_at_snapshot(snap, "b") is None

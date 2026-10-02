@@ -11,16 +11,16 @@ Backlog for `/new-problem`. Each idea is a realistic progressive-interview arc: 
 - [x] `file-storage`: add/size/delete, then largest-by-prefix, user capacity and merge, backup/restore
 - [x] `text-editor`: cursor typing, then selection and clipboard, undo/redo, multiple documents
 - [x] `bank-system`: accounts and transfers, then top spenders, cashback payments, merges and balance history
+- [x] `parking-lot`: park/leave by spot, then fees by duration (integer cents), vehicle sizes and spot fitting, revenue for a time window
+- [x] `kv-transactions`: get/set/delete/count, then begin/commit/rollback, nested transactions, snapshot reads
 
 ## Backlog
 
-- [ ] `parking-lot`: park/leave by spot, then fees by duration (integer cents), vehicle sizes and spot fitting, revenue for a time window
 - [ ] `job-queue`: enqueue/claim/complete, then priorities with FIFO ties, retries with backoff at timestamps, job dependencies (a DAG)
 - [ ] `inventory`: stock in/out, then reservations that expire, multiple warehouses with transfers, stock level at a past time
 - [ ] `url-shortener`: shorten/resolve with deterministic ids, then custom aliases and collisions, click stats and top links, expiry and deletion history
 - [ ] `library-checkout`: checkout/return, then a holds queue per book, late fees, member history queries
 - [ ] `chat-server`: send/read, then channels and unread counts, message edits and deletes, search by time range
-- [ ] `kv-transactions`: get/set/delete/count, then begin/commit/rollback, nested transactions, snapshot reads
 - [ ] `hotel-reservations`: book/cancel by date range, then overlap detection across rooms, room types and free upgrades, occupancy report
 - [ ] `order-book`: place limit orders, then price-time matching, cancels and partial fills, VWAP and trade history
 - [ ] `mini-git`: commit/checkout of a file map, then branches, three-way merge with conflict reporting, log and blame
