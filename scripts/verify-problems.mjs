@@ -40,6 +40,16 @@ function loadProblem(slug) {
     }
     return { n, tests: read(sdir, 'tests.py'), solution: read(sdir, 'solution.py') }
   })
+  const placeholders = [
+    ['problem.json', JSON.stringify(meta)],
+    ['starter.py', read(dir, 'starter.py')],
+    ...stageNums.flatMap((n) =>
+      ['prompt.md', 'stage.json', 'tests.py', 'solution.py'].map((f) => [`stages/${n}/${f}`, read(stagesDir, String(n), f)]),
+    ),
+  ].filter(([, content]) => content.includes('TODO(author)'))
+  if (placeholders.length) {
+    throw new Error(`${slug}: unfinished placeholders in ${placeholders.map(([f]) => f).join(', ')}`)
+  }
   return { slug, starter: read(dir, 'starter.py'), stages }
 }
 

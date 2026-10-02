@@ -45,4 +45,6 @@ scripts/verify-problems.mjs   proves every problem in Node + Pyodide
 
 ## Adding problems
 
-See [docs/AUTHORING.md](docs/AUTHORING.md). `pnpm verify:problems` must pass before a problem ships.
+In Claude Code, run `/new-problem` (optionally with a theme, difficulty, or count) to generate problems end to end: design, author, verify in Pyodide, independent review, and a full UI solve. Ideas live in [docs/problem-ideas.md](docs/problem-ideas.md).
+
+By hand: `pnpm new-problem <slug> --title "..." --class ClassName`, then fill every `TODO(author)` per [docs/AUTHORING.md](docs/AUTHORING.md). `pnpm verify:problems` must pass before a problem ships, and `pnpm run deploy` runs it first.
