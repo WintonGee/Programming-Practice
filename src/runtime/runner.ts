@@ -21,6 +21,7 @@ export class PythonRuntime {
   private booted: Promise<void> | null = null
   private pending = new Map<number, Pending>()
   private nextId = 1
+  private queue: Promise<unknown> = Promise.resolve()
   private listeners = new Set<(s: RuntimeStatus) => void>()
   private _status: RuntimeStatus = 'idle'
   private _bootError: string | null = null
@@ -87,7 +88,17 @@ export class PythonRuntime {
     this.pending.clear()
   }
 
-  private async send(request: WithoutId<WorkerRequest>): Promise<string> {
+  /**
+   * Runs are serialized: the worker is shared by every view, and a queued run must not have
+   * its timeout ticking (or be rejected by a restart) while an earlier run is still going.
+   */
+  private send(request: WithoutId<WorkerRequest>): Promise<string> {
+    const run = this.queue.then(() => this.execute(request))
+    this.queue = run.catch(() => {})
+    return run
+  }
+
+  private async execute(request: WithoutId<WorkerRequest>): Promise<string> {
     await this.warmUp()
     const worker = this.worker
     if (!worker) throw new Error('Python worker unavailable')
