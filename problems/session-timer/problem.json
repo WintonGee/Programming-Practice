@@ -1,0 +1,8 @@
+{
+  "title": "Session Timer",
+  "difficulty": "Medium",
+  "order": 1,
+  "tags": ["Design", "Hash Map", "Time Intervals", "Injected Clock"],
+  "summary": "Track contributor work sessions and completed tasks. Evolves through pause/resume, per-contributor leaderboards, and point-in-time history queries.",
+  "estimatedMinutes": 75
+}

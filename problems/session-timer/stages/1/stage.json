@@ -1,0 +1,9 @@
+{
+  "title": "Open, close, and count",
+  "hints": [
+    "Store one record per session in a dict keyed by session_id. What fields does a session need? Start time, end time (or None while open), and the set of task ids.",
+    "A small @dataclass keeps the record readable: `opened_at: int`, `closed_at: int | None = None`, `tasks: set[str] = field(default_factory=set)`.",
+    "Write a private `_get(session_id)` helper that raises KeyError for unknown ids, so every public method validates the same way.",
+    "Elapsed is `(closed_at if closed_at is not None else self.clock.now()) - opened_at`. Watch out: `closed_at` can legitimately be 0, so test `is not None`, not truthiness."
+  ]
+}

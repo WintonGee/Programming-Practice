@@ -1,0 +1,9 @@
+{
+  "title": "Pause and resume",
+  "hints": [
+    "You no longer have one interval per session — you have several. Instead of storing intervals, keep a running total: `accumulated` seconds from finished stretches, plus `running_since` (the start of the current stretch, or None when paused/closed).",
+    "pause: `accumulated += at - running_since; running_since = None`. resume: `running_since = at`.",
+    "Elapsed = `accumulated + (now - running_since if running_since is not None else 0)`. Closing a running session folds the last stretch into `accumulated`; closing a paused one adds nothing.",
+    "Track state explicitly (e.g. an Enum with RUNNING / PAUSED / CLOSED) so each method can validate transitions in one line."
+  ]
+}

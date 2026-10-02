@@ -1,0 +1,9 @@
+{
+  "title": "Contributor reports",
+  "hints": [
+    "Add a `contributor: str | None` field on each session, and keep a secondary index `dict[str, list[str]]` from contributor to their session ids. Indexes like this are the classic move when a new query arrives.",
+    "Don't cache elapsed totals per contributor — open sessions keep growing with the clock. Reuse `get_session_elapsed` and sum at query time.",
+    "Distinct tasks across sessions: union the per-session task sets: `set().union(*(s.tasks for s in sessions))`.",
+    "Sort with a tuple key: `sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))`, then slice `[:n]` and format with an f-string."
+  ]
+}

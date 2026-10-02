@@ -1,0 +1,9 @@
+{
+  "title": "Point-in-time history",
+  "hints": [
+    "Running totals throw away the history you now need. Store the active stretches themselves: a list of `[start, end]` intervals, where the last one has `end = None` while running.",
+    "Elapsed as of `at` is a clipped sum: for each interval, `max(0, min(end_or_at, at) - start)`. Careful: the *live* value is not simply this with `at = clock.now()` — earlier stages promised a closed session reports its full total no matter what the clock says. Keep a separate live helper where finished stretches count in full.",
+    "For tasks, remember the first completion time per task: `tasks: dict[str, int]` and `setdefault(task_id, at)`. Then count values `v` with `start <= v < end`.",
+    "Refactoring is the point of this stage. If your earlier code computed elapsed in several places, collapse it into one helper before adding the new queries."
+  ]
+}
