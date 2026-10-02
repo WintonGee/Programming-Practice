@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProblemContext, TutorEvent } from '../src/tutor/protocol'
+import { gatewayOptions } from './index'
 import { buildSystemPrompt } from './prompt'
 import { toTutorEvents } from './sse'
 import { InvalidRequest, parseTutorRequest } from './validate'
@@ -120,5 +121,26 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt({ kind: 'general' })
     expect(p).toContain('There is no problem open')
     expect(p).not.toContain("Learner's current code")
+  })
+})
+
+describe('gatewayOptions', () => {
+  const env = { TUTOR_GATEWAY: 'default' }
+
+  it('caches a one-shot general question', () => {
+    const g = gatewayOptions(env, { context: { kind: 'general' }, messages: [user('What is a heap?')] })
+    expect(g).toMatchObject({ id: 'default', cacheTtl: 604_800, metadata: { app: 'staged', context: 'general' } })
+    expect(g.skipCache).toBeUndefined()
+  })
+
+  it('never caches follow-ups or problem questions, and tags problem requests', () => {
+    const followUp = gatewayOptions(env, {
+      context: { kind: 'general' },
+      messages: [user('a'), { role: 'assistant', content: 'b' }, user('c')],
+    })
+    expect(followUp).toMatchObject({ skipCache: true })
+    const p = gatewayOptions(env, { context: problem, messages: [user('Why?')] })
+    expect(p).toMatchObject({ skipCache: true, metadata: { context: 'problem', mode: 'practice', problem: 'Session Timer', stage: 2 } })
+    expect(p.cacheTtl).toBeUndefined()
   })
 })

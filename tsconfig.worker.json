@@ -16,6 +16,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["worker/**/*.ts", "src/tutor/protocol.ts"],
-  "exclude": ["worker/**/*.test.ts"]
+  "include": ["worker/**/*.ts", "src/tutor/protocol.ts"]
 }

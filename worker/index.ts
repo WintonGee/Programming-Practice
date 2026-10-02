@@ -15,16 +15,42 @@ function log(level: 'info' | 'warn' | 'error', message: string, fields: Record<s
 /** Errors that mean "this model isn't available to this account", so a fallback model should be tried. */
 const isUnavailable = (err: unknown): boolean => /\b(403|5035|5007|5018)\b|paid plan|not found|no such model/i.test(String(err))
 
+/**
+ * Every model call goes through AI Gateway for logs, analytics, retries, and caching.
+ * The `default` gateway is created automatically on first use.
+ */
+export function gatewayOptions(env: Pick<Env, 'TUTOR_GATEWAY'>, req: TutorRequest): GatewayOptions {
+  const c = req.context
+  // Only a one-shot general question is safe to cache: the same question always deserves the same
+  // answer, while a follow-up or a retried problem question should get a fresh one.
+  const cacheable = c.kind === 'general' && req.messages.length === 1
+  return {
+    id: env.TUTOR_GATEWAY,
+    ...(cacheable ? { cacheTtl: 7 * 24 * 60 * 60 } : { skipCache: true }),
+    requestTimeoutMs: 60_000,
+    retries: { maxAttempts: 2, retryDelayMs: 500, backoff: 'exponential' },
+    metadata:
+      c.kind === 'problem'
+        ? { app: 'staged', context: 'problem', mode: c.mode, problem: c.problemTitle, stage: c.stageNumber }
+        : { app: 'staged', context: 'general' },
+  }
+}
+
 async function runModel(env: Env, req: TutorRequest): Promise<{ model: string; stream: ReadableStream<Uint8Array> }> {
   const messages = [{ role: 'system' as const, content: buildSystemPrompt(req.context) }, ...req.messages]
+  const gateway = gatewayOptions(env, req)
   const attempt = async (model: string, extra: Record<string, unknown>) =>
-    (await env.AI.run(model as keyof AiModels, {
-      messages,
-      stream: true,
-      max_completion_tokens: MAX_ANSWER_TOKENS,
-      temperature: 0.3,
-      ...extra,
-    } as never)) as unknown as ReadableStream<Uint8Array>
+    (await env.AI.run(
+      model as keyof AiModels,
+      {
+        messages,
+        stream: true,
+        max_completion_tokens: MAX_ANSWER_TOKENS,
+        temperature: 0.3,
+        ...extra,
+      } as never,
+      { gateway },
+    )) as unknown as ReadableStream<Uint8Array>
 
   try {
     // Low reasoning effort keeps a chat reply fast; the tutor's answers are short.
