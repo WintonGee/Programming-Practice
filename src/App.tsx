@@ -1,19 +1,25 @@
-import { useState } from 'react'
-import { problems } from './problems'
-import { python } from './runtime/runner'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { Home } from './pages/Home'
+import { NotFound } from './pages/NotFound'
+
+const Workspace = lazy(() => import('./pages/Workspace').then((m) => ({ default: m.Workspace })))
 
 export default function App() {
-  const [out, setOut] = useState('')
-  const p = problems[0]
-  const go = async (k: number) => {
-    const r = await python.runTests(p.stages[k].solution, p.stages.slice(0, k + 1).map((s) => ({ stage: s.number, source: s.tests })))
-    setOut(JSON.stringify(r, null, 2))
-  }
   return (
-    <div>
-      <button id="run" onClick={() => go(3)}>run</button>
-      <button id="loop" onClick={async () => setOut(JSON.stringify(await python.runFile('while True: pass')))}>loop</button>
-      <pre id="out">{out}</pre>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route
+          path="/p/:slug"
+          element={
+            <Suspense fallback={<div className="h-dvh bg-bg" aria-busy="true" />}>
+              <Workspace />
+            </Suspense>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
   )
 }

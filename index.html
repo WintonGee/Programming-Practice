@@ -1,10 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>app-tmp</title>
+    <title>Staged: progressive coding interview practice</title>
+    <meta name="description" content="Practice staged, CodeSignal-style coding interviews in Python. Pass each stage's tests to unlock the next." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#141B2D" />
+    <script>
+      try {
+        var stored = localStorage.getItem('staged:theme')
+        var theme = stored === 'light' || stored === 'dark'
+          ? stored
+          : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = theme
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

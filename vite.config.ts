@@ -6,6 +6,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   worker: { format: 'es' },
+  // The workspace chunk is mostly CodeMirror and is lazy-loaded; home stays smaller.
+  build: { chunkSizeWarningLimit: 800 },
   optimizeDeps: { exclude: ['pyodide'] },
   test: {
     include: ['src/**/*.test.{ts,tsx}'],
