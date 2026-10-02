@@ -1,0 +1,9 @@
+{
+  "title": "Accounts and transfers",
+  "hints": [
+    "Keep a dict from account id to the account's state. Even though the state is just a balance today, a small `@dataclass class Account: balance: int = 0` gives you room to grow.",
+    "Validate everything before mutating anything. A transfer that fails halfway (source debited, target missing) is the classic bug.",
+    "Order the transfer checks: both ids exist, ids differ, `source.balance >= amount`. Only then subtract and add.",
+    "Return values are easy to mix up: `deposit` returns the account's new balance, `transfer` returns the **source's** new balance."
+  ]
+}

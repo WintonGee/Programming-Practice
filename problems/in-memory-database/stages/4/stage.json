@@ -1,0 +1,9 @@
+{
+  "title": "Backup and restore",
+  "hints": [
+    "A backup is a list entry `(timestamp, snapshot)`. Because timestamps never decrease, appending keeps the list sorted, and the last qualifying entry is the newest.",
+    "Don't store expiry times in the snapshot — store what's left: `expires_at - timestamp` (or None for permanent). Restore turns it back into an absolute time with `restore_timestamp + remaining`.",
+    "Build the snapshot from your live-fields helper so expired fields never get saved. Store plain tuples `(value, remaining)` rather than your Entry objects, so later writes can't reach into a saved backup.",
+    "To find the backup: `for at, snapshot in reversed(self.backups): if at <= timestamp_to_restore: ...`. Then rebuild `self.records` from scratch with fresh Entry objects."
+  ]
+}

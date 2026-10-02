@@ -37,8 +37,8 @@ class SessionTimer:
 
 
 def main() -> None:
-    timer = SessionTimer(SystemClock())
-    print("Hello, SessionTimer!", timer)
+    # Scratch space: try your class out here, then use "Run file".
+    print("Hello, SessionTimer!")
 
 
 if __name__ == "__main__":

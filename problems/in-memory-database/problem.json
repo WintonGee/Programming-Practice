@@ -1,0 +1,8 @@
+{
+  "title": "In-Memory Database",
+  "difficulty": "Medium",
+  "order": 3,
+  "tags": ["Design", "Hash Map", "Sorting", "TTL", "Snapshots"],
+  "summary": "Build a key-field-value store. Evolves through sorted scans, timestamped writes with time-to-live, and point-in-time backup and restore.",
+  "estimatedMinutes": 75
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Set, get, delete",
+  "hints": [
+    "A record is just a dict of fields. The whole database is a dict of those: `dict[str, dict[str, str]]`.",
+    "`setdefault(key, {})` creates the record on first write in one line. For reads, `self.records.get(key, {}).get(field)` returns None for both kinds of missing.",
+    "In `delete`, check membership before removing so you know whether to return True or False. If the record's dict is now empty, `del` the record too.",
+    "Remember `\"\"` is a valid value — never use truthiness (`if value:`) to decide whether a field exists."
+  ]
+}

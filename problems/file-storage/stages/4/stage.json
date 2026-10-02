@@ -1,0 +1,9 @@
+{
+  "title": "Backup and restore",
+  "hints": [
+    "A backup is a plain `dict[str, int]` of name to size, stored per user: `self.backups: dict[str, dict[str, int]]`. Build a **new** dict each time so later changes can't leak into it.",
+    "Restore in two phases. Phase 1: delete every file whose owner is this user (reuse `delete_file` so `used` stays correct; collect names first, don't mutate the dict while iterating it). Phase 2: re-add each backed-up file whose name is free.",
+    "After phase 1, any name still present must belong to someone else, so `if name in self.files: continue` is the whole skip rule. Write the file directly rather than through your capacity-checking helper, since restore ignores capacity.",
+    "Merging: `self.backups.pop(user_id_2, None)`. Forgetting this lets a re-added user id inherit a stale backup."
+  ]
+}

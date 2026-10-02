@@ -1,0 +1,8 @@
+{
+  "title": "Banking System",
+  "difficulty": "Hard",
+  "order": 7,
+  "tags": ["Design", "Hash Map", "Sorting", "Scheduled Events", "History"],
+  "summary": "Run accounts with deposits and transfers. Evolves through spender rankings, payments with delayed cashback, and account merges with historical balance queries.",
+  "estimatedMinutes": 90
+}

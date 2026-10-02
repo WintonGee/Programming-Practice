@@ -1,0 +1,9 @@
+{
+  "title": "Scan and prefix scan",
+  "hints": [
+    "Both methods do the same thing with a different filter. Write `scan_by_prefix` first; `scan(key)` is then just `scan_by_prefix(key, \"\")`.",
+    "`sorted(record.items())` sorts by field name because tuples compare their first element first.",
+    "`str.startswith(prefix)` is True for every string when `prefix` is `\"\"`, so no special case is needed.",
+    "`return [f\"{field}({value})\" for field, value in sorted(record.items()) if field.startswith(prefix)]`, where `record = self.records.get(key, {})`."
+  ]
+}

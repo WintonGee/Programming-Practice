@@ -1,0 +1,9 @@
+{
+  "title": "Top spenders",
+  "hints": [
+    "Track the running total on the account itself: add an `outgoing: int = 0` field and bump it inside `transfer`, only on the success path.",
+    "Keeping the total up to date at write time makes the query a simple sort — no need to replay a transaction log.",
+    "Sort with a tuple key so both orderings happen in one pass: `key=lambda item: (-item[1].outgoing, item[0])`.",
+    "`sorted(self.accounts.items(), key=...)[:n]`, then format each with `f\"{account_id}({account.outgoing})\"`. Slicing past the end of a list is safe."
+  ]
+}

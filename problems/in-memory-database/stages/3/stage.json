@@ -1,0 +1,9 @@
+{
+  "title": "Timestamps and TTL",
+  "hints": [
+    "A field now needs more than a value: store a small record per field, e.g. `@dataclass class Entry: value: str; expires_at: int | None = None`, where None means \"never expires\".",
+    "Precompute `expires_at = timestamp + ttl` at write time. Then liveness is one comparison: `expires_at is None or timestamp < expires_at`. Put it on the dataclass as `alive(timestamp)`.",
+    "Make the timed reads the real implementation and build them on one helper that returns the live fields of a record at a time. `scan_by_prefix_at`, `scan_at`, and `get_at` all fall out of it.",
+    "You don't need to physically remove expired fields — just skip them on read. An overwrite replaces the whole Entry, which resets the expiry for free."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Add, size, delete",
+  "hints": [
+    "One dict from file name to size covers this stage: `dict[str, int]`.",
+    "Check `name in self.files` before writing so a duplicate add can't overwrite the original size.",
+    "`dict.pop(name, None)` removes and returns in one step, returning None when the key is missing — exactly `delete_file`'s contract.",
+    "Size `0` is real data. Use `is None` checks, never truthiness, when deciding whether a file exists."
+  ]
+}

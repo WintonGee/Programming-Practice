@@ -1,0 +1,9 @@
+{
+  "title": "Merges and balance history",
+  "hints": [
+    "Merging is mostly bookkeeping: add balance and outgoing into account 1, then re-point every payment whose `account_id` is account 2 to account 1. If pending cashbacks look up the owner at credit time, redirecting them is free.",
+    "Running balances can't answer \"what was it at time T\". Keep a per-id history: `dict[str, list[tuple[int, int | None]]]`, appending `(timestamp, balance)` after every change, and `(timestamp, None)` when an account is merged away.",
+    "Record cashback at its **due** time, not the time of the call that processed it. Because cashbacks are processed before anything at or after the due time happens, the history list stays sorted.",
+    "Lookup is a binary search for the last entry at or before `time_at`: `i = bisect_right(events, time_at, key=lambda e: e[0])`, then `events[i - 1][1] if i else None`. Recreated ids just keep appending to the same list."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Users and capacity",
+  "hints": [
+    "Files now need an owner: change the file map to `name -> File(size, owner)`, and add `users: dict[str, User]` where `User` has `capacity: int | None` (None meaning unlimited) and `used: int`.",
+    "Seed `self.users` with `\"admin\"` in the constructor and route `add_file` through the same internal helper as `add_file_by`. One code path means one place to get the checks right.",
+    "Keep `used` up to date on every add, delete, and merge so remaining capacity is just `capacity - used`. Don't forget `delete_file` must credit the owner.",
+    "Merge: add capacities and `used`, then loop over files and reassign `owner` where it equals user 2, then `del self.users[user_id_2]`. Validate (equal ids, unknown, admin) before touching anything."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "title": "Cloud File Storage",
+  "difficulty": "Medium",
+  "order": 5,
+  "tags": ["Design", "Hash Map", "Sorting", "Capacity Accounting", "Snapshots"],
+  "summary": "Store named files with sizes. Evolves through largest-file queries, per-user capacity limits with account merges, and per-user backup and restore.",
+  "estimatedMinutes": 75
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Payments with cashback",
+  "hints": [
+    "Model each payment as a dataclass: owning account id, cashback amount, `due_at` timestamp, and a `received` flag. Keep them in a dict keyed by payment id.",
+    "Cashback is a scheduled event. Keep the unpaid ones in a queue and write `_process_cashbacks(timestamp)` that credits every one with `due_at <= timestamp`. Call it as the first line of **every** public method.",
+    "Timestamps strictly increase, so payments are created in due order. A `collections.deque` works as the queue: `while pending and pending[0].due_at <= timestamp: pending.popleft()`. (A `heapq` keyed on `due_at` also works if you don't want to rely on that.)",
+    "Integer math only: `amount * 2 // 100`. The payment counter is `len(self.payments) + 1` at creation time, so failed payments never skip a number."
+  ]
+}
