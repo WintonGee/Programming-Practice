@@ -1,0 +1,9 @@
+{
+  "title": "Keep score",
+  "hints": [
+    "All you need is one mapping from player name to their running total. Which built-in type maps keys to values?",
+    "Use a `dict[str, int]`. `self.scores.get(player, 0)` reads a total without needing the key to exist.",
+    "`add_score` is `self.scores[player] = self.scores.get(player, 0) + points`, then return the new value. For `reset`, `self.scores.pop(player, None)` removes the key and never raises.",
+    "Avoid `defaultdict(int)` here: reading a missing key silently *adds* the player. That's harmless now, but in Stage 2 \"who is on the board\" starts to matter."
+  ]
+}

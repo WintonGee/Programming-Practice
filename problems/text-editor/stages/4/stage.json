@@ -1,0 +1,9 @@
+{
+  "title": "Multiple documents",
+  "hints": [
+    "Almost all of your state — text, cursor, selection, both history stacks — now exists once *per document*. Only the clipboard stays global. Which part of your class should move into a new class?",
+    "Extract a `@dataclass Document` holding `text`, `cursor`, `selection`, `undo_stack`, `redo_stack` (use `field(default_factory=list)` for the stacks). The editor keeps `documents: dict[str, Document]`, `active: str`, and `clipboard`.",
+    "Move the editing logic (`_edit`, `_snapshot`, `_restore`, `undo`, `redo`, …) onto `Document` nearly unchanged, then make each `TextEditor` method delegate: `def undo(self) -> bool: return self.doc.undo()` with a `doc` property returning `self.documents[self.active]`.",
+    "Only `copy` and `paste` need the editor itself, because they read or write the shared clipboard. `create` checks `name in self.documents` first; `switch` only assigns `self.active` when the name exists."
+  ]
+}

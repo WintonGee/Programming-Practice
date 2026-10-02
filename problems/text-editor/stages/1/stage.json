@@ -1,0 +1,9 @@
+{
+  "title": "Cursor and typing",
+  "hints": [
+    "The whole state is two values: the document string and an integer cursor. Every operation reads or updates just those.",
+    "Python strings are immutable, so edits are slicing: inserting at `c` is `text[:c] + new + text[c:]`, and deleting the `k` characters before `c` is `text[:c - k] + text[c:]`.",
+    "Clamp with `max(0, min(position, len(self.text)))`. For backspace, the number actually deleted is `min(n, self.cursor)` — compute it first, then slice and move the cursor by that amount.",
+    "All three edits are the same move: replace the range `[start, end)` with some text and put the cursor after it. A single `_splice(start, end, text)` helper makes `append`, `insert`, and `backspace` one line each — and pays off in later stages."
+  ]
+}

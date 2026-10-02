@@ -1,0 +1,9 @@
+{
+  "title": "Fixed window",
+  "hints": [
+    "For each client you only need to know two things: which window their count belongs to, and how many requests were allowed in it.",
+    "The current window number is `self.clock.now() // self.window_seconds`. Integer division is what aligns windows to multiples of `window_seconds`.",
+    "Store `client_id -> (window_number, count)` (a small @dataclass reads nicely). If the stored window number differs from the current one, start a fresh count of 0 before checking.",
+    "Check `count >= limit` *before* incrementing, and only increment when you return True — that's what keeps rejected requests from being counted."
+  ]
+}

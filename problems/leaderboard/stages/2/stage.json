@@ -1,0 +1,9 @@
+{
+  "title": "Top players and rank",
+  "hints": [
+    "Your dict from Stage 1 already knows exactly who is on the board: its keys. Both queries are computed from `self.scores` at call time.",
+    "To order by score high-to-low and then name low-to-high, sort with a tuple key that negates the score: `key=lambda kv: (-kv[1], kv[0])`.",
+    "`top` is `sorted(self.scores.items(), key=...)[:k]`, then format each pair with an f-string: `f\"{player}({score})\"`. Slicing past the end is safe.",
+    "For `rank`, don't sort at all: return `1 + sum(1 for s in self.scores.values() if s > mine)`. Ties automatically share the better rank. Check membership first and return `None` if the player is missing."
+  ]
+}

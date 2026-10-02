@@ -1,0 +1,8 @@
+{
+  "title": "Game Leaderboard",
+  "difficulty": "Easy",
+  "order": 2,
+  "tags": ["Design", "Hash Map", "Sorting", "Binary Search"],
+  "summary": "Keep running scores for players in a game. Grows into ranked top-k queries with shared ranks, then point-in-time history lookups.",
+  "estimatedMinutes": 40
+}

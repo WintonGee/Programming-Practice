@@ -1,0 +1,9 @@
+{
+  "title": "Selection and clipboard",
+  "hints": [
+    "Add two fields: `selection: tuple[int, int] | None` and `clipboard: str | None`. `None` cleanly means \"no selection\" and \"nothing copied yet\" — don't use `\"\"` or `(0, 0)` as sentinels.",
+    "Normalize in `select`: clamp both ends, then `start, end = sorted((start, end))`. Store the tuple only if `start < end`, and set the cursor to `end` either way.",
+    "Every edit now targets a range: the selection if there is one, otherwise the empty range at the cursor: `start, end = self.selection or (self.cursor, self.cursor)`. Feed that into your `_splice` helper and `insert` handles both cases.",
+    "Clear the selection in exactly one place — inside `_splice` — plus `move_cursor`. Then `paste` is `if self.clipboard is None: return False`, otherwise `self.insert(self.clipboard)`."
+  ]
+}

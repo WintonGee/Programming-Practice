@@ -1,0 +1,9 @@
+{
+  "title": "Sliding window",
+  "hints": [
+    "A count per window can't tell *when* each request happened, and the sliding rule needs exactly that. Keep a log of allowed-request timestamps per client.",
+    "Timestamps arrive in order, so the oldest is always at the front: a `collections.deque` per client lets you drop expired entries with `popleft()` in O(1).",
+    "Before answering anything, expire: `while log and log[0] <= now - window_seconds: log.popleft()`. Then the client's usage is `len(log)`. Note the `<=` — that's the exclusive lower bound.",
+    "Give each strategy the same two operations — `used(now)` and `record(now)` — in small classes (`FixedWindow`, `SlidingLog`). Then `allow` and `remaining` are written once: `remaining = limit - used`, `allow` checks `used < limit` and records. Parse the strategy into an Enum (`StrEnum` makes `Strategy(\"sliding\")` work and raises `ValueError` for you)."
+  ]
+}

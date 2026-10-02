@@ -1,0 +1,9 @@
+{
+  "title": "Client tiers and stats",
+  "hints": [
+    "Two new pieces of per-client data: an optional limit override and two counters. Keep them in their own dicts so a client can have an override before it has ever made a request.",
+    "Add a tiny `_limit(client_id)` helper: `return self.limits.get(client_id, self.limit)`. Replace every use of `self.limit` in `allow` and `remaining` with it.",
+    "Lowering a limit below current usage would make `limit - used` negative. Clamp with `max(0, ...)` in `remaining`; `allow` already rejects because `used >= limit`.",
+    "Stats are lifetime totals, so don't store them inside the window state that resets. A `@dataclass Stats: allowed: int = 0; rejected: int = 0` in a dict, bumped in exactly one place inside `allow`, keeps it simple. Return `(stats.allowed, stats.rejected)`."
+  ]
+}

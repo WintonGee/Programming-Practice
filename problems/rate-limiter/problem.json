@@ -1,0 +1,8 @@
+{
+  "title": "API Rate Limiter",
+  "difficulty": "Medium",
+  "order": 4,
+  "tags": ["Design", "Hash Map", "Queue", "Sliding Window", "Injected Clock"],
+  "summary": "Throttle API clients with a fixed-window quota. Evolves into a rolling window, per-client limits with stats, and a token bucket with weighted requests.",
+  "estimatedMinutes": 75
+}

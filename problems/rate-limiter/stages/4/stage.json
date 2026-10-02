@@ -1,0 +1,9 @@
+{
+  "title": "Token bucket and weighted requests",
+  "hints": [
+    "A token bucket needs only two numbers per client: how many tokens it holds and when you last refilled it. Refill lazily — whenever you look at the bucket, add tokens for the time since the last look, then cap.",
+    "Floats will bite you (`0.1 + 0.2 != 0.3`). Store tokens multiplied by `window_seconds`: `d` seconds then adds exactly `d * limit` scaled units, capacity is `limit * window_seconds`, and a request needs `cost * window_seconds`. Whole tokens are `scaled // window_seconds`. (`fractions.Fraction` also works.)",
+    "Unify the strategies behind two methods: `available(now, limit) -> int` (units usable right now) and `consume(now, cost)`. Then `allow` is `available >= cost` -> consume, and `remaining` is just `available`. For the sliding log, store `(timestamp, cost)` pairs and keep a running sum.",
+    "Because the bucket's limit can change, pass the effective limit into `available` rather than storing it. In `set_limit`, call `available(now, old_limit)` on an existing bucket *before* saving the override — that settles the refill at the old rate, and the next call caps at the new limit."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "Score history",
+  "hints": [
+    "A single running total per player can't answer \"what was it at time t?\". Keep each player's history: the timestamps of their changes and the running total right after each one.",
+    "Because timestamps never go backwards, each player's timestamp list is already sorted. Appending keeps it sorted for free — and sorted lists mean you can binary search.",
+    "`bisect_right(times, at)` returns how many changes happened at or before `at`. If that count is `i > 0`, the answer is `totals[i - 1]`; if it's `0`, the player had no changes yet.",
+    "Make the untimed `add_score` call `add_score_at(player, points, self.latest)` so there is exactly one code path that records changes. Then `get_score` is just the last running total, and `top`/`top_at` can share one sort-and-format helper."
+  ]
+}

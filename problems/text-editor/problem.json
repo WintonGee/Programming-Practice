@@ -1,0 +1,8 @@
+{
+  "title": "Text Editor",
+  "difficulty": "Medium",
+  "order": 6,
+  "tags": ["Design", "String", "Stack", "Simulation"],
+  "summary": "Build the core of a text editor with a cursor. Grows to selections and a clipboard, undo/redo, and multiple documents with independent histories.",
+  "estimatedMinutes": 80
+}

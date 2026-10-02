@@ -1,0 +1,9 @@
+{
+  "title": "Undo and redo",
+  "hints": [
+    "Undo needs to restore text, cursor *and* selection, so the simplest correct approach is snapshots: save the whole state before each edit rather than trying to compute inverse operations.",
+    "A frozen `@dataclass Snapshot(text, cursor, selection)` plus two lists used as stacks: `undo_stack` and `redo_stack`. `undo` pushes the current snapshot onto `redo_stack`, then pops and restores from `undo_stack`; `redo` is the mirror image.",
+    "In each editing method, take `before = self._snapshot()` first, do the edit, then call one helper: if `self.text != before.text`, push `before` onto the undo stack and clear the redo stack. That single text comparison handles every no-op case.",
+    "Never push in `move_cursor`, `select`, or `copy`, and never touch the clipboard in `_restore`. `paste` calls `insert`, so if `insert` records the edit, `paste` must not record it a second time."
+  ]
+}
