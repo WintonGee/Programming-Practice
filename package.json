@@ -18,7 +18,9 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm verify:problems",
     "deploy": "pnpm verify:problems && pnpm build && wrangler deploy",
     "e2e:prod": "E2E_BASE_URL=https://coding.wintongee.com playwright test",
-    "new-problem": "node scripts/new-problem.mjs"
+    "new-problem": "node scripts/new-problem.mjs",
+    "types:worker": "wrangler types worker/worker-configuration.d.ts --strict-vars=false",
+    "dev:api": "pnpm build && wrangler dev --port 8787"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

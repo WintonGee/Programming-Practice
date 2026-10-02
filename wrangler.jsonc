@@ -1,10 +1,30 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "coding-practice",
-  "compatibility_date": "2026-10-01",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-02",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Only the API runs the Worker; every other request is served straight from static assets.
+    "run_worker_first": ["/api/*"]
+  },
+  "ai": { "binding": "AI" },
+  "ratelimits": [
+    // Per client IP. The tutor is public and Workers AI usage bills to this account.
+    { "name": "TUTOR_LIMITER", "namespace_id": "4201", "simple": { "limit": 12, "period": 60 } }
+  ],
+  "vars": {
+    // Best quality for the price; requires the Workers Paid plan.
+    "TUTOR_MODEL": "@cf/zai-org/glm-5.3-flash",
+    // Used if the primary model is unavailable on this account's plan.
+    "TUTOR_FALLBACK_MODEL": "@cf/zai-org/glm-4.7-flash"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "traces": { "enabled": true }
   },
   "routes": [{ "pattern": "coding.wintongee.com", "custom_domain": true }]
 }
