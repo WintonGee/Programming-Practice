@@ -20,7 +20,8 @@ Intended home: **https://coding.wintongee.com** (Cloudflare Workers static asset
 pnpm install
 pnpm dev                 # copies the Pyodide runtime into public/pyodide, then starts Vite
 pnpm check               # typecheck + lint + unit tests + content verification
-pnpm e2e                 # Playwright end-to-end tests against a production build
+pnpm e2e                 # Playwright end-to-end tests against a local production build
+pnpm e2e:prod            # the same suite against https://coding.wintongee.com
 ```
 
 ## Deploy

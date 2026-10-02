@@ -16,7 +16,8 @@
     "verify:problems": "node scripts/verify-problems.mjs",
     "e2e": "playwright test",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm verify:problems",
-    "deploy": "pnpm build && wrangler deploy"
+    "deploy": "pnpm build && wrangler deploy",
+    "e2e:prod": "E2E_BASE_URL=https://coding.wintongee.com playwright test"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

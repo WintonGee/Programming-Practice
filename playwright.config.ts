@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 4317
+// Set E2E_BASE_URL (e.g. https://coding.wintongee.com) to test a deployed site instead of a local build.
+const REMOTE = process.env.E2E_BASE_URL
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,14 +14,16 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['list']],
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: REMOTE ?? `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  webServer: REMOTE
+    ? undefined
+    : {
+        command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
+        url: `http://localhost:${PORT}`,
+        reuseExistingServer: false,
+        timeout: 120_000,
+      },
 })
