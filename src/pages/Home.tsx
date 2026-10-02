@@ -1,4 +1,7 @@
+import { GraduationCap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { buttonClass } from '../components/buttonClass'
 import { ContinueCard } from '../components/home/ContinueCard'
 import { ProblemList } from '../components/home/ProblemList'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -22,7 +25,13 @@ export function Home() {
       <header className="border-b border-line">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5">
           <Wordmark />
-          <ThemeToggle />
+          <nav aria-label="Site" className="flex items-center gap-1">
+            <Link to="/teacher" className={buttonClass('ghost', 'md')}>
+              <GraduationCap size={16} aria-hidden />
+              Teacher
+            </Link>
+            <ThemeToggle />
+          </nav>
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 pb-16">

@@ -16,6 +16,8 @@ import {
   type ProblemProgress,
 } from '../state/progress'
 import { safeStorage } from '../state/storage'
+import { buildProblemContext, summarizeRun } from '../tutor/context'
+import { TutorChat } from '../tutor/TutorChat'
 import type { LoadError, Problem } from '../types'
 import { EditorPane } from './EditorPane'
 import { Header, type Celebrate } from './Header'
@@ -58,6 +60,10 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   const [celebrate, setCelebrate] = useState<Celebrate | null>(null)
   const [resultsTab, setResultsTab] = useState<ResultsTab>('tests')
   const [testRun, setTestRun] = useState<TestRunRecord | null>(null)
+  const testRunRef = useRef(testRun)
+  useEffect(() => {
+    testRunRef.current = testRun
+  }, [testRun])
   const [fileRun, setFileRun] = useState<FileRunRecord | null>(null)
   const [running, setRunning] = useState<RunKind | null>(null)
   const runningRef = useRef(false)
@@ -199,6 +205,26 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
       mobile={mobile}
     />
   )
+  // Read through refs at send time so a question asked mid-edit sees the latest code and run.
+  const tutorContext = () =>
+    buildProblemContext({
+      problem,
+      progress: currentProgress() ?? progress,
+      code: codeRef.current,
+      testRun: testRunRef.current,
+    })
+  const lastRun = summarizeRun(testRun, progress.unlockedStage)
+  const teacher = (
+    <TutorChat
+      thread={slug}
+      getContext={tutorContext}
+      scope={{
+        kind: 'problem',
+        mode,
+        hasFailures: !!lastRun && (lastRun.failures.length > 0 || lastRun.loadError !== undefined),
+      }}
+    />
+  )
   const left = (
     <LeftPane
       problem={problem}
@@ -209,6 +235,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
       onViewStage={setViewStage}
       arrivedStage={arrivedStage}
       onDismissArrived={() => setArrivedStage(null)}
+      teacher={teacher}
     />
   )
   const editorPane = (
