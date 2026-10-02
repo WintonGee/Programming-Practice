@@ -40,6 +40,11 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   const runtime = useRuntimeStatus()
   const editor = useRef<CodeEditorHandle>(null)
 
+  useEffect(() => {
+    document.documentElement.classList.add('app-shell')
+    return () => document.documentElement.classList.remove('app-shell')
+  }, [])
+
   const [code, setCodeLocal] = useState(progress.code)
   const { status: saveStatus, flush } = useAutosave(slug, progress.attempt.startedAt, code)
   const codeRef = useRef(code)
@@ -253,7 +258,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
           ? 'fail'
           : null
     return (
-      <div className="flex h-dvh flex-col overflow-hidden">
+      <div className="flex h-dvh flex-col overflow-clip">
         {header}
         {banner}
         <main className="relative min-h-0 flex-1">
@@ -273,7 +278,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-clip">
       {header}
       {banner}
       <DesktopPanes left={left} editor={editorPane} results={results} />

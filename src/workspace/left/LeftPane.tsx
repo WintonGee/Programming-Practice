@@ -46,7 +46,7 @@ export function LeftPane({ problem, progress, tab, onTab, viewStage, onViewStage
         role="tabpanel"
         aria-labelledby={ids.tab}
         tabIndex={0}
-        className="scroll-thin min-h-0 flex-1 overflow-y-auto focus-visible:-outline-offset-2"
+        className="scroll-pane min-h-0 flex-1 focus-visible:-outline-offset-2"
       >
         {active === 'prompt' && (
           <PromptTab

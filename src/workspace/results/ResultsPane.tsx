@@ -158,7 +158,7 @@ export function ResultsPane(props: Props) {
         id={ids.panel}
         role="tabpanel"
         aria-labelledby={ids.tab}
-        className="scroll-thin min-h-0 flex-1 overflow-y-auto px-4 py-3"
+        className="scroll-pane min-h-0 flex-1 px-4 py-3"
       >
         {body}
       </div>

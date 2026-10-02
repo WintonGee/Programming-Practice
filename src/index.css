@@ -120,6 +120,7 @@
 
 @layer base {
   html {
+    overscroll-behavior: none;
     background: var(--c-bg);
     color: var(--c-text);
     font-family: var(--font-sans);
@@ -312,4 +313,22 @@
 .scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--c-line-strong) transparent;
+}
+
+/* A pane that scrolls on its own. `relative` makes it the containing block for absolutely
+   positioned descendants (e.g. sr-only labels), which otherwise anchor to <body> and
+   stretch the document; `contain` stops wheel scrolling from chaining to the page. */
+.scroll-pane {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+/* The workspace is an app shell: only its panes scroll, never the document. */
+html.app-shell,
+html.app-shell body {
+  height: 100%;
+  overflow: hidden;
 }

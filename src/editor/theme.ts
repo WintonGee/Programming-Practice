@@ -13,6 +13,7 @@ const base = EditorView.theme({
   },
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': {
+    overscrollBehavior: 'contain',
     fontFamily: 'var(--font-mono)',
     lineHeight: '1.65',
     scrollbarWidth: 'thin',
