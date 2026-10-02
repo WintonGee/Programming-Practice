@@ -15,7 +15,7 @@ Users want to select text and move it around. A **selection** is a half-open ran
 - `backspace(n)` deletes exactly the selected text, ignoring `n`, and returns the number of characters deleted; the cursor ends at `start`. A negative `n` still raises `ValueError` (and changes nothing).
 - `append(text)` still adds to the end of the document and does not touch the selected text.
 
-After `insert`, `paste`, `backspace`, `append`, or `move_cursor` there is **no** selection. `copy`, `get_text`, `get_cursor`, and `get_selection` leave it in place. All Stage 1 behavior still applies when no selection is active.
+After a successful `insert`, `paste`, `backspace`, `append`, or `move_cursor` there is **no** selection (a `paste` that returns `False`, or a call that raises, changes nothing). `copy`, `get_text`, `get_cursor`, and `get_selection` leave it in place. All Stage 1 behavior still applies when no selection is active.
 
 ### Example
 

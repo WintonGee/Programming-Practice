@@ -145,3 +145,14 @@ def test_undo_after_redo_reverts_again():
     editor.redo()
     assert editor.undo() is True
     assert _state(editor) == ("", 0, None)
+
+
+def test_redo_restores_state_before_undo():
+    """Redo returns to the state just before the matching undo, including the cursor."""
+    editor = TextEditor()
+    editor.append("abc")
+    editor.move_cursor(1)
+    assert editor.undo() == True
+    assert editor.redo() == True
+    assert editor.get_text() == "abc"
+    assert editor.get_cursor() == 1
