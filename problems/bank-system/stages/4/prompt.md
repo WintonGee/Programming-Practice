@@ -16,7 +16,7 @@ Customers with two accounts want to consolidate them, and support needs to answe
 ### History rules
 
 - The balance "at `time_at`" reflects every operation with timestamp `<= time_at`, including any cashback due at or before `time_at`, and a merge at exactly `time_at`.
-- An account exists from its `create_account` timestamp (inclusive) until the timestamp it is merged away (exclusive). Outside those times `get_balance` returns `None`, unless the id was created again, in which case the new account exists from its own creation time.
+- An account exists from its `create_account` timestamp (inclusive) until the timestamp it is merged away (exclusive). Outside those times `get_balance` returns `None`, unless the id was created again, in which case the new account exists from its own creation time. Balances from the earlier lifetime stay queryable for the times it existed — keep history per account id, not per account object.
 
 All Stage 1–3 behavior still applies.
 
