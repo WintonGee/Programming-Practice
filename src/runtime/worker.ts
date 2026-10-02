@@ -5,8 +5,9 @@ import runnerSource from './python/runner.py?raw'
 import type { WorkerRequest, WorkerResponse } from './protocol'
 
 declare const self: DedicatedWorkerGlobalScope
+declare const __PYODIDE_VERSION__: string
 
-const PYODIDE_BASE = `${import.meta.env.BASE_URL}pyodide/`
+const PYODIDE_BASE = `${import.meta.env.BASE_URL}pyodide/${__PYODIDE_VERSION__}/`
 
 type PyFn = (...args: unknown[]) => string
 
