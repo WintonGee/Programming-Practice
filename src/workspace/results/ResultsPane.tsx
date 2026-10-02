@@ -25,6 +25,8 @@ interface Props {
   onRunTests: () => void
   onRunFile: () => void
   onJump: (line: number) => void
+  /** Current editor content; line links are disabled once it differs from the code that ran. */
+  currentCode: string
   onContinue: () => void
 }
 
@@ -68,8 +70,22 @@ function Running({ runtime, label }: { runtime: RuntimeStatus; label: string }) 
 }
 
 export function ResultsPane(props: Props) {
-  const { problem, progress, tab, onTab, testRun, fileRun, running, runtime, onRunTests, onRunFile, onJump, onContinue } =
-    props
+  const {
+    problem,
+    progress,
+    tab,
+    onTab,
+    testRun,
+    fileRun,
+    running,
+    runtime,
+    onRunTests,
+    onRunFile,
+    onJump,
+    currentCode,
+    onContinue,
+  } = props
+  const jumpFor = (record: { code: string } | null) => (record && record.code === currentCode ? onJump : undefined)
   const count = problem.stages.length
   const finished = isFinished(progress, count)
   const ready = !finished && progress.completedStages.includes(progress.unlockedStage)
@@ -78,7 +94,7 @@ export function ResultsPane(props: Props) {
   const completion = finished ? (
     <AllCompleteCard problem={problem} progress={progress} />
   ) : ready ? (
-    <StageCompleteCard problem={problem} progress={progress} onContinue={onContinue} />
+    <StageCompleteCard problem={problem} progress={progress} onContinue={onContinue} disabled={running !== null} />
   ) : null
 
   let body: ReactNode
@@ -87,7 +103,7 @@ export function ResultsPane(props: Props) {
       running === 'file' ? (
         <Running runtime={runtime} label="Running solution.py…" />
       ) : (
-        <OutputView record={fileRun} onRetry={onRunFile} onJump={onJump} />
+        <OutputView record={fileRun} onRetry={onRunFile} onJump={jumpFor(fileRun)} />
       )
   } else if (running === 'tests') {
     body = <Running runtime={runtime} label={`Running tests for ${stagesThrough(progress.unlockedStage)}…`} />
@@ -112,11 +128,11 @@ export function ResultsPane(props: Props) {
       ) : run.kind === 'crash' ? (
         <CrashBanner message={run.message} onRetry={onRunTests} />
       ) : run.loadError ? (
-        <LoadErrorBanner error={run.loadError} onJump={onJump} />
+        <LoadErrorBanner error={run.loadError} onJump={jumpFor(testRun)} />
       ) : (
         <div className="space-y-3">
           {completion}
-          <TestResults problem={problem} stage={testRun.stage} results={run.results} onJump={onJump} />
+          <TestResults problem={problem} stage={testRun.stage} results={run.results} onJump={jumpFor(testRun)} />
         </div>
       )
   }

@@ -10,9 +10,10 @@ interface Props {
   problem: Problem
   progress: ProblemProgress
   onContinue: () => void
+  disabled?: boolean
 }
 
-export function StageCompleteCard({ problem, progress, onContinue }: Props) {
+export function StageCompleteCard({ problem, progress, onContinue, disabled = false }: Props) {
   const stage = progress.unlockedStage
   const next = problem.stages[stage]
   return (
@@ -24,7 +25,7 @@ export function StageCompleteCard({ problem, progress, onContinue }: Props) {
           <p className="mt-0.5 text-[13px] text-muted">
             Every test for {stagesThrough(stage)} passes. Next up: {next.title.toLowerCase()}. Your code carries over.
           </p>
-          <Button variant="success" className="mt-3" onClick={onContinue}>
+          <Button variant="success" className="mt-3" onClick={onContinue} disabled={disabled}>
             Continue to stage {stage + 1}
           </Button>
         </div>

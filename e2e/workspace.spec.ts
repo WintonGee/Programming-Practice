@@ -65,3 +65,34 @@ test('code persists across reload', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+End')
   await expect(page.locator('.cm-content')).toContainText('# persisted-marker-42')
 })
+
+test('shows a warning when the browser refuses to save code', async ({ page }) => {
+  await seedProgress(page, SLUG, readProblemFile(`${SLUG}/starter.py`))
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === 'staged:v1') throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      return original.call(this, key, value)
+    }
+  })
+  await page.goto(`/p/${SLUG}`)
+
+  await page.locator('.cm-content').click()
+  await page.keyboard.type('# edit')
+  await expect(page.getByText('Not saved — browser storage unavailable')).toBeVisible()
+})
+
+test('a run queued behind a timed-out run still gets its full budget', async ({ page }) => {
+  test.setTimeout(120_000)
+  const code = `${stage1Solution}\n\nif __name__ == "__main__":\n    while True:\n        pass\n`
+  await seedProgress(page, SLUG, code)
+  await page.goto(`/p/${SLUG}`)
+
+  await page.getByRole('button', { name: 'Run file' }).click()
+  // Leave the workspace while Python is stuck, come back, and queue a test run behind it.
+  // Client-side navigation keeps the same page, so the stuck worker is still alive.
+  await page.getByRole('link', { name: /all problems|back/i }).first().click()
+  await page.getByRole('link', { name: 'Session Timer' }).first().click()
+  await page.getByRole('button', { name: 'Run tests' }).click()
+  await expect(page.getByTestId('results-summary')).toContainText('11 of 11 passing', { timeout: PYTHON_TIMEOUT })
+})

@@ -6,6 +6,7 @@ import { python } from '../runtime/runner'
 import {
   completeStage,
   getProgressState,
+  isFinished,
   markTimeUp,
   normalizeProgress,
   recordTestRun,
@@ -15,7 +16,7 @@ import {
   type ProblemProgress,
 } from '../state/progress'
 import { safeStorage } from '../state/storage'
-import type { Problem } from '../types'
+import type { LoadError, Problem } from '../types'
 import { EditorPane } from './EditorPane'
 import { Header, type Celebrate } from './Header'
 import { LeftPane, type LeftTab } from './left/LeftPane'
@@ -40,7 +41,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   const editor = useRef<CodeEditorHandle>(null)
 
   const [code, setCodeLocal] = useState(progress.code)
-  const { saving, flush } = useAutosave(slug, code)
+  const { status: saveStatus, flush } = useAutosave(slug, progress.attempt.startedAt, code)
   const codeRef = useRef(code)
   useEffect(() => {
     codeRef.current = code
@@ -87,33 +88,48 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     return () => clearTimeout(id)
   }, [mode, attempt.timeUpAt, attempt.finishedAt, attempt.startedAt, problem.estimatedMinutes, slug])
 
-  const runTests = useCallback(async () => {
+  const currentProgress = useCallback(() => {
     const raw = getProgressState().problems[slug]
-    const p = raw ? normalizeProgress(raw, count) : null
+    return raw ? normalizeProgress(raw, count) : null
+  }, [slug, count])
+
+  /** Mark the error line only if the editor still holds the code that produced it. */
+  const showRunError = (ranCode: string, error: LoadError | null) => {
+    const fresh = codeRef.current === ranCode
+    editor.current?.showError(
+      fresh && error?.line ? { line: error.line, column: error.column, message: error.message } : null,
+    )
+  }
+
+  const runTests = useCallback(async () => {
+    const p = currentProgress()
     if (runningRef.current || !p) return
     runningRef.current = true
     flush()
     const stage = p.unlockedStage
+    const attemptStartedAt = p.attempt.startedAt
+    const ranCode = codeRef.current
     setRunning('tests')
     setResultsTab('tests')
     setMobileView('results')
     updateProgress((s) => recordTestRun(s, slug, Date.now()))
     const suites = problem.stages.slice(0, stage).map((s) => ({ stage: s.number, source: s.tests }))
-    const run = await python.runTests(codeRef.current, suites)
+    const run = await python.runTests(ranCode, suites)
     runningRef.current = false
     setRunning(null)
-    setTestRun({ run, stage })
 
-    const loadError = run.kind === 'ok' ? run.loadError : null
-    editor.current?.showError(
-      loadError?.line ? { line: loadError.line, column: loadError.column, message: loadError.message } : null,
-    )
-    if (run.kind === 'ok' && !loadError && run.results.length > 0 && run.results.every((r) => r.status === 'pass')) {
-      const alreadyDone = p.completedStages.includes(stage)
-      updateProgress((s) => completeStage(s, slug, stage, count, Date.now()))
+    // The attempt or stage moved on while Python was busy; this result no longer describes anything on screen.
+    const now = currentProgress()
+    if (!now || now.attempt.startedAt !== attemptStartedAt || now.unlockedStage !== stage) return
+
+    setTestRun({ run, stage, code: ranCode })
+    showRunError(ranCode, run.kind === 'ok' ? run.loadError : null)
+    if (run.kind === 'ok' && !run.loadError && run.results.length > 0 && run.results.every((r) => r.status === 'pass')) {
+      const alreadyDone = now.completedStages.includes(stage)
+      updateProgress((s) => completeStage(s, slug, { attemptStartedAt, stage, stageCount: count }, Date.now()))
       if (stage === count && !alreadyDone) setCelebrate({ fill: stage, arrive: null })
     }
-  }, [slug, count, problem.stages, flush])
+  }, [slug, count, problem.stages, flush, currentProgress])
 
   const runFile = useCallback(async () => {
     if (runningRef.current) return
@@ -122,14 +138,12 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     setRunning('file')
     setResultsTab('output')
     setMobileView('results')
-    const run = await python.runFile(codeRef.current)
+    const ranCode = codeRef.current
+    const run = await python.runFile(ranCode)
     runningRef.current = false
     setRunning(null)
-    setFileRun({ run })
-    const error = run.kind === 'ok' ? run.error : null
-    editor.current?.showError(
-      error?.line ? { line: error.line, column: error.column, message: error.message } : null,
-    )
+    setFileRun({ run, code: ranCode })
+    showRunError(ranCode, run.kind === 'ok' ? run.error : null)
   }, [flush])
 
   useEffect(() => {
@@ -166,7 +180,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     editor.current?.showError(null)
   }
 
-  const finished = attempt.finishedAt !== undefined && progress.completedStages.includes(count)
+  const finished = isFinished(progress, count)
   const showTimeUp = mode === 'interview' && attempt.timeUpAt !== undefined && !timeUpDismissed && !finished
 
   const header = (
@@ -196,7 +210,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     <EditorPane
       code={code}
       onChange={setCodeLocal}
-      saving={saving}
+      saveStatus={saveStatus}
       onRunFile={() => void runFile()}
       onResetCode={onResetCode}
       onStartOver={() => {
@@ -221,6 +235,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
       onRunTests={() => void runTests()}
       onRunFile={() => void runFile()}
       onJump={onJump}
+      currentCode={code}
       onContinue={onContinue}
     />
   )

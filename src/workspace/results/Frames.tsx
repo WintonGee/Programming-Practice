@@ -1,7 +1,8 @@
 import type { TraceFrame } from '../../types'
 
 /** Traceback frames, innermost last. solution.py frames jump the editor to that line. */
-export function Frames({ frames, onJump }: { frames: TraceFrame[]; onJump: (line: number) => void }) {
+/** Without `onJump` (the editor changed since the run) frames render as plain text. */
+export function Frames({ frames, onJump }: { frames: TraceFrame[]; onJump?: (line: number) => void }) {
   return (
     <div>
       <p className="mb-1 text-xs text-muted">Traceback</p>
@@ -17,7 +18,7 @@ export function Frames({ frames, onJump }: { frames: TraceFrame[]; onJump: (line
           )
           return (
             <li key={i} className="border-t border-line first:border-t-0">
-              {own ? (
+              {own && onJump ? (
                 <button
                   type="button"
                   onClick={() => onJump(f.line)}

@@ -106,33 +106,42 @@ export function parseState(raw: string | null): ProgressState {
 
 export const serializeState = (state: ProgressState): string => JSON.stringify(state)
 
-/** Clamp stored progress to the problem as it exists now (stages can be removed). */
+const allStagesCompleted = (completed: number[], stageCount: number): boolean =>
+  stageCount >= 1 && Array.from({ length: stageCount }, (_, i) => i + 1).every((n) => completed.includes(n))
+
+/**
+ * Clamp stored progress to the problem as it exists now (stages can be added or removed),
+ * and keep `finishedAt` consistent with whether every stage is completed.
+ */
 export function normalizeProgress(p: ProblemProgress, stageCount: number): ProblemProgress {
   const count = Math.max(1, stageCount)
   const completedStages = p.completedStages.filter((n) => n <= count)
   const unlockedStage = Math.min(Math.max(1, p.unlockedStage), count)
   const prune = (m: Record<number, number>) =>
     Object.fromEntries(Object.entries(m).filter(([k]) => Number(k) <= count)) as Record<number, number>
+  const stageCompletedAt = prune(p.attempt.stageCompletedAt)
+  const done = allStagesCompleted(completedStages, count)
+  const lastCompletion = Math.max(0, ...Object.values(stageCompletedAt))
+  const finishedAt = done ? (p.attempt.finishedAt ?? (lastCompletion || p.updatedAt)) : undefined
   if (
     unlockedStage === p.unlockedStage &&
     completedStages.length === p.completedStages.length &&
+    finishedAt === p.attempt.finishedAt &&
     Object.keys(p.attempt.stageCompletedAt).every((k) => Number(k) <= count) &&
     Object.keys(p.attempt.hintsRevealed).every((k) => Number(k) <= count) &&
     p.attempt.solutionViewed.every((n) => n <= count)
   ) {
     return p
   }
-  return {
-    ...p,
-    unlockedStage,
-    completedStages,
-    attempt: {
-      ...p.attempt,
-      stageCompletedAt: prune(p.attempt.stageCompletedAt),
-      hintsRevealed: prune(p.attempt.hintsRevealed),
-      solutionViewed: p.attempt.solutionViewed.filter((n) => n <= count),
-    },
+  const attempt: Attempt = {
+    ...p.attempt,
+    stageCompletedAt,
+    hintsRevealed: prune(p.attempt.hintsRevealed),
+    solutionViewed: p.attempt.solutionViewed.filter((n) => n <= count),
   }
+  if (finishedAt === undefined) delete attempt.finishedAt
+  else attempt.finishedAt = finishedAt
+  return { ...p, unlockedStage, completedStages, attempt }
 }
 
 export function stageState(p: ProblemProgress | undefined, stage: number, stageCount: number): StageState {
@@ -144,7 +153,7 @@ export function stageState(p: ProblemProgress | undefined, stage: number, stageC
 }
 
 export const isFinished = (p: ProblemProgress | undefined, stageCount: number): boolean =>
-  !!p && p.completedStages.includes(stageCount)
+  !!p && allStagesCompleted(p.completedStages, stageCount)
 
 function update(
   state: ProgressState,
@@ -181,25 +190,41 @@ export function startAttempt(
 export const setCode = (state: ProgressState, slug: string, code: string, now: number): ProgressState =>
   update(state, slug, now, (p) => (p.code === code ? null : { ...p, code }))
 
+/** Save code only into the attempt the editor was opened for; a newer attempt (e.g. from another tab) wins. */
+export const setCodeForAttempt = (
+  state: ProgressState,
+  slug: string,
+  attemptStartedAt: number,
+  code: string,
+  now: number,
+): ProgressState =>
+  state.problems[slug]?.attempt.startedAt === attemptStartedAt ? setCode(state, slug, code, now) : state
+
 export const recordTestRun = (state: ProgressState, slug: string, now: number): ProgressState =>
   update(state, slug, now, (p) => ({ ...p, attempt: { ...p.attempt, testRuns: p.attempt.testRuns + 1 } }))
 
-/** Mark `stage` passed. Finishing the last stage finishes the attempt. */
-export function completeStage(
-  state: ProgressState,
-  slug: string,
-  stage: number,
-  stageCount: number,
-  now: number,
-): ProgressState {
-  return update(state, slug, now, (p) => {
-    if (p.completedStages.includes(stage) || stage > stageCount || stage < 1) return null
+export interface StageResult {
+  /** `attempt.startedAt` captured when the run began; results from an older attempt are ignored. */
+  attemptStartedAt: number
+  /** The stage the run tested. Must still be the current unlocked stage. */
+  stage: number
+  stageCount: number
+}
+
+/** Mark the current stage passed. Completing every stage finishes the attempt. */
+export function completeStage(state: ProgressState, slug: string, result: StageResult, now: number): ProgressState {
+  const { attemptStartedAt, stage, stageCount } = result
+  return update(state, slug, now, (raw) => {
+    const p = normalizeProgress(raw, stageCount)
+    if (p.attempt.startedAt !== attemptStartedAt || stage !== p.unlockedStage || p.completedStages.includes(stage)) {
+      return null
+    }
     const completedStages = [...p.completedStages, stage].sort((a, b) => a - b)
     const attempt: Attempt = {
       ...p.attempt,
       stageCompletedAt: { ...p.attempt.stageCompletedAt, [stage]: now },
     }
-    if (stage === stageCount && attempt.finishedAt === undefined) attempt.finishedAt = now
+    if (allStagesCompleted(completedStages, stageCount)) attempt.finishedAt = attempt.finishedAt ?? now
     return { ...p, completedStages, attempt }
   })
 }
@@ -267,6 +292,7 @@ export function mostRecentInProgress(
 // Store: one in-memory snapshot, mirrored to localStorage on every change.
 
 let snapshot: ProgressState | null = null
+let lastWriteOk = true
 const listeners = new Set<() => void>()
 
 function read(): ProgressState {
@@ -280,13 +306,15 @@ function emit() {
 
 export const getProgressState = read
 
-export function updateProgress(fn: (state: ProgressState) => ProgressState): void {
+/** Apply `fn` and persist. Returns whether the latest state is in storage (false if the browser refused the write). */
+export function updateProgress(fn: (state: ProgressState) => ProgressState): boolean {
   const prev = read()
   const next = fn(prev)
-  if (next === prev) return
+  if (next === prev) return lastWriteOk
   snapshot = next
-  safeStorage.setItem(STORAGE_KEY, serializeState(next))
+  lastWriteOk = safeStorage.setItem(STORAGE_KEY, serializeState(next))
   emit()
+  return lastWriteOk
 }
 
 function subscribe(listener: () => void): () => void {

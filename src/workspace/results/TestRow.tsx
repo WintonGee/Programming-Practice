@@ -11,7 +11,7 @@ const icons = {
 
 const statusLabel = { pass: 'Passed', fail: 'Failed', error: 'Error' }
 
-export function TestRow({ result, onJump }: { result: TestResult; onJump: (line: number) => void }) {
+export function TestRow({ result, onJump }: { result: TestResult; onJump?: (line: number) => void }) {
   const failed = result.status !== 'pass'
   const hasDetail = failed || result.stdout !== ''
   const [open, setOpen] = useState(failed)

@@ -19,25 +19,31 @@ function Banner({ icon, title, children }: { icon: ReactNode; title: string; chi
   )
 }
 
-export function LoadErrorBanner({ error, onJump }: { error: LoadError; onJump: (line: number) => void }) {
+export function LoadErrorBanner({ error, onJump }: { error: LoadError; onJump?: (line: number) => void }) {
   const line = error.line ?? null
   return (
     <Banner icon={<CircleAlert size={16} aria-hidden />} title="Your code didn’t load, so no tests ran">
       <p className="mt-1.5 font-mono text-[13px] break-words whitespace-pre-wrap text-fail">{error.message}</p>
       {line !== null && (
         <div className="mt-3 overflow-hidden rounded-md border border-line bg-panel">
-          <button
-            type="button"
-            onClick={() => onJump(line)}
-            className="flex w-full items-center gap-2 border-b border-line px-3 py-1.5 text-left text-xs text-muted hover:text-text focus-visible:-outline-offset-2"
-          >
+          <div className="flex items-center gap-2 border-b border-line px-3 py-1.5 text-xs text-muted">
             <span className="font-mono">solution.py</span>
             <span>
               line {line}
               {error.column ? `, column ${error.column}` : ''}
             </span>
-            <span className="ml-auto text-focus">Go to line</span>
-          </button>
+            {onJump ? (
+              <button
+                type="button"
+                onClick={() => onJump(line)}
+                className="ml-auto rounded px-1 text-focus hover:underline"
+              >
+                Go to line
+              </button>
+            ) : (
+              <span className="ml-auto">Code changed since this run</span>
+            )}
+          </div>
           {error.code !== undefined && error.code !== '' && (
             <pre className="scroll-thin overflow-x-auto px-3 py-2 font-mono text-[13px] leading-relaxed">
               <span className="mr-3 inline-block w-6 text-right text-muted select-none">{line}</span>

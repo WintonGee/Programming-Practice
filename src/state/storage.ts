@@ -7,11 +7,13 @@ export const safeStorage = {
       return null
     }
   },
-  setItem(key: string, value: string): void {
+  /** Returns false when the value could not be persisted (storage full or unavailable). */
+  setItem(key: string, value: string): boolean {
     try {
       window.localStorage.setItem(key, value)
+      return true
     } catch {
-      // Storage full or unavailable: keep working in memory.
+      return false
     }
   },
 }

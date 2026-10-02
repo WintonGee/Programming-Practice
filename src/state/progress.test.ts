@@ -12,6 +12,7 @@ import {
   revealHint,
   serializeState,
   setCode,
+  setCodeForAttempt,
   stageState,
   startAttempt,
   totalHintsRevealed,
@@ -40,7 +41,7 @@ describe('startAttempt', () => {
   it('replaces a previous attempt entirely', () => {
     let s = started()
     s = setCode(s, 'p', 'edited', T0 + 1)
-    s = completeStage(s, 'p', 1, 3, T0 + 2)
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 2)
     s = unlockNextStage(s, 'p', 3, T0 + 3)
     s = revealHint(s, 'p', 2, 4, T0 + 4)
     s = startAttempt(s, 'p', 'interview', 'starter', T0 + 10)
@@ -58,7 +59,7 @@ describe('reducers', () => {
     const s = emptyState()
     expect(setCode(s, 'nope', 'x', T0)).toBe(s)
     expect(recordTestRun(s, 'nope', T0)).toBe(s)
-    expect(completeStage(s, 'nope', 1, 3, T0)).toBe(s)
+    expect(completeStage(s, 'nope', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0)).toBe(s)
   })
 
   it('setCode updates code and updatedAt, and is a no-op for identical code', () => {
@@ -77,10 +78,10 @@ describe('reducers', () => {
   })
 
   it('completes a stage once, recording the first completion time', () => {
-    let s = completeStage(started(), 'p', 1, 3, T0 + 60_000)
+    let s = completeStage(started(), 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 60_000)
     expect(s.problems.p.completedStages).toEqual([1])
     expect(s.problems.p.attempt.stageCompletedAt).toEqual({ 1: T0 + 60_000 })
-    const again = completeStage(s, 'p', 1, 3, T0 + 90_000)
+    const again = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 90_000)
     expect(again).toBe(s)
     s = again
     expect(s.problems.p.attempt.finishedAt).toBeUndefined()
@@ -88,14 +89,14 @@ describe('reducers', () => {
 
   it('rejects stages outside 1..stageCount', () => {
     const s = started()
-    expect(completeStage(s, 'p', 0, 3, T0)).toBe(s)
-    expect(completeStage(s, 'p', 4, 3, T0)).toBe(s)
+    expect(completeStage(s, 'p', { attemptStartedAt: T0, stage: 0, stageCount: 3 }, T0)).toBe(s)
+    expect(completeStage(s, 'p', { attemptStartedAt: T0, stage: 4, stageCount: 3 }, T0)).toBe(s)
   })
 
   it('unlocks the next stage only after the current one is passed', () => {
     let s = started()
     expect(unlockNextStage(s, 'p', 3, T0)).toBe(s)
-    s = completeStage(s, 'p', 1, 3, T0 + 1)
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 1)
     s = unlockNextStage(s, 'p', 3, T0 + 2)
     expect(s.problems.p.unlockedStage).toBe(2)
     expect(unlockNextStage(s, 'p', 3, T0 + 3)).toBe(s)
@@ -104,13 +105,43 @@ describe('reducers', () => {
   it('finishes the attempt when the last stage completes and never unlocks past it', () => {
     let s = started()
     for (const stage of [1, 2, 3]) {
-      s = completeStage(s, 'p', stage, 3, T0 + stage * 1000)
+      s = completeStage(s, 'p', { attemptStartedAt: T0, stage, stageCount: 3 }, T0 + stage * 1000)
       s = unlockNextStage(s, 'p', 3, T0 + stage * 1000 + 1)
     }
     const p = s.problems.p
     expect(p.unlockedStage).toBe(3)
     expect(p.attempt.finishedAt).toBe(T0 + 3000)
     expect(isFinished(p, 3)).toBe(true)
+  })
+
+  it('only completes the current unlocked stage', () => {
+    const s = started()
+    expect(completeStage(s, 'p', { attemptStartedAt: T0, stage: 2, stageCount: 3 }, T0 + 1)).toBe(s)
+  })
+
+  it('ignores a run result that lands after the user continued', () => {
+    let s = completeStage(started(), 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 1)
+    s = unlockNextStage(s, 'p', 3, T0 + 2)
+    expect(completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 3)).toBe(s)
+    expect(s.problems.p.completedStages).toEqual([1])
+  })
+
+  it('ignores a run result from an attempt that was replaced by Start over', () => {
+    const s = startAttempt(started(), 'p', 'practice', 'starter', T0 + 10)
+    expect(completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 20)).toBe(s)
+  })
+
+  it('finishes the attempt when a stage added later is completed', () => {
+    let s = started()
+    for (const stage of [1, 2, 3]) {
+      s = completeStage(s, 'p', { attemptStartedAt: T0, stage, stageCount: 3 }, T0 + stage)
+      s = unlockNextStage(s, 'p', 3, T0 + stage)
+    }
+    s = unlockNextStage(s, 'p', 4, T0 + 10)
+    expect(s.problems.p.unlockedStage).toBe(4)
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 4, stageCount: 4 }, T0 + 50)
+    expect(s.problems.p.attempt.finishedAt).toBe(T0 + 50)
+    expect(isFinished(s.problems.p, 4)).toBe(true)
   })
 
   it('reveals hints one at a time up to the hint count', () => {
@@ -140,7 +171,7 @@ describe('reducers', () => {
 
 describe('stageState', () => {
   it('derives passed, ready, current and locked', () => {
-    let s = completeStage(started(), 'p', 1, 3, T0)
+    let s = completeStage(started(), 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0)
     expect([1, 2, 3].map((n) => stageState(s.problems.p, n, 3))).toEqual(['ready', 'locked', 'locked'])
     s = unlockNextStage(s, 'p', 3, T0)
     expect([1, 2, 3].map((n) => stageState(s.problems.p, n, 3))).toEqual(['passed', 'current', 'locked'])
@@ -148,7 +179,7 @@ describe('stageState', () => {
 
   it('shows the last stage as passed once completed', () => {
     let s = started()
-    s = completeStage(s, 'p', 1, 1, T0)
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 1 }, T0)
     expect(stageState(s.problems.p, 1, 1)).toBe('passed')
   })
 
@@ -160,7 +191,7 @@ describe('stageState', () => {
 describe('serialization', () => {
   it('round-trips through JSON', () => {
     let s = started()
-    s = completeStage(s, 'p', 1, 3, T0 + 5)
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 3 }, T0 + 5)
     s = revealHint(s, 'p', 1, 3, T0 + 6)
     expect(parseState(serializeState(s))).toEqual(s)
   })
@@ -211,7 +242,7 @@ describe('normalizeProgress', () => {
     for (const stage of [1, 2, 3, 4]) {
       s = revealHint(s, 'p', stage, 4, T0)
       s = markSolutionViewed(s, 'p', stage, T0)
-      s = completeStage(s, 'p', stage, 4, T0 + stage)
+      s = completeStage(s, 'p', { attemptStartedAt: T0, stage, stageCount: 4 }, T0 + stage)
       s = unlockNextStage(s, 'p', 4, T0 + stage)
     }
     const p = normalizeProgress(s.problems.p, 3)
@@ -224,6 +255,51 @@ describe('normalizeProgress', () => {
   })
 })
 
+describe('normalizeProgress finish state', () => {
+  const twoOfThree = () => {
+    let s = started()
+    for (const stage of [1, 2]) {
+      s = completeStage(s, 'p', { attemptStartedAt: T0, stage, stageCount: 3 }, T0 + stage * 1000)
+      s = unlockNextStage(s, 'p', 3, T0 + stage * 1000)
+    }
+    return s.problems.p
+  }
+
+  it('sets finishedAt from the last completion when removed stages leave everything completed', () => {
+    const p = normalizeProgress(twoOfThree(), 2)
+    expect(p.attempt.finishedAt).toBe(T0 + 2000)
+    expect(isFinished(p, 2)).toBe(true)
+  })
+
+  it('falls back to updatedAt when no completion times were recorded', () => {
+    const raw = { ...twoOfThree(), updatedAt: T0 + 9 }
+    const p = normalizeProgress({ ...raw, attempt: { ...raw.attempt, stageCompletedAt: {} } }, 2)
+    expect(p.attempt.finishedAt).toBe(T0 + 9)
+  })
+
+  it('clears finishedAt when a new stage is added after finishing', () => {
+    let s = started()
+    s = completeStage(s, 'p', { attemptStartedAt: T0, stage: 1, stageCount: 1 }, T0 + 5)
+    expect(s.problems.p.attempt.finishedAt).toBe(T0 + 5)
+    const p = normalizeProgress(s.problems.p, 2)
+    expect(p.attempt.finishedAt).toBeUndefined()
+    expect('finishedAt' in p.attempt).toBe(false)
+    expect(isFinished(p, 2)).toBe(false)
+  })
+})
+
+describe('setCodeForAttempt', () => {
+  it('saves into the attempt the editor was opened for', () => {
+    const s = setCodeForAttempt(started(), 'p', T0, 'mine', T0 + 1)
+    expect(s.problems.p.code).toBe('mine')
+  })
+
+  it('does not overwrite a newer attempt started elsewhere', () => {
+    const s = startAttempt(started(), 'p', 'interview', 'starter', T0 + 100)
+    expect(setCodeForAttempt(s, 'p', T0, 'stale edit', T0 + 200)).toBe(s)
+  })
+})
+
 describe('mostRecentInProgress', () => {
   it('picks the latest unfinished problem among known slugs', () => {
     let s = started('a')
@@ -231,7 +307,7 @@ describe('mostRecentInProgress', () => {
     s = startAttempt(s, 'gone', 'practice', 'starter', T0 + 99)
     s = setCode(s, 'a', 'edit', T0 + 20)
     expect(mostRecentInProgress(s, { a: 3, b: 3 })?.slug).toBe('a')
-    s = completeStage(s, 'a', 1, 1, T0 + 30)
+    s = completeStage(s, 'a', { attemptStartedAt: T0, stage: 1, stageCount: 1 }, T0 + 30)
     expect(mostRecentInProgress(s, { a: 1, b: 3 })?.slug).toBe('b')
     expect(mostRecentInProgress(emptyState(), { a: 3 })).toBeNull()
   })

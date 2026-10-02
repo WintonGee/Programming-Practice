@@ -8,7 +8,7 @@ import { Frames } from './Frames'
 interface Props {
   record: FileRunRecord | null
   onRetry: () => void
-  onJump: (line: number) => void
+  onJump?: (line: number) => void
 }
 
 export function OutputView({ record, onRetry, onJump }: Props) {

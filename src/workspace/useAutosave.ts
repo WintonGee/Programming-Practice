@@ -1,21 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { setCode, updateProgress } from '../state/progress'
+import { setCodeForAttempt, updateProgress } from '../state/progress'
 
 const DELAY_MS = 400
 
-/** Debounced write of editor code to progress; flushes on hide and unmount so a reload never loses work. */
-export function useAutosave(slug: string, code: string): { saving: boolean; flush: () => void } {
+export type SaveStatus = 'saving' | 'saved' | 'failed'
+
+/**
+ * Debounced write of editor code to progress; flushes on hide and unmount so a reload never loses work.
+ * Writes are scoped to the attempt the editor was opened for, so a stale tab can't clobber a newer attempt.
+ */
+export function useAutosave(
+  slug: string,
+  attemptStartedAt: number,
+  code: string,
+): { status: SaveStatus; flush: () => void } {
   const latest = useRef(code)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [savedCode, setSavedCode] = useState(code)
+  const [saved, setSaved] = useState({ code, ok: true })
 
   const flush = useCallback(() => {
     if (timer.current) clearTimeout(timer.current)
     timer.current = null
     const value = latest.current
-    updateProgress((s) => setCode(s, slug, value, Date.now()))
-    setSavedCode(value)
-  }, [slug])
+    const ok = updateProgress((s) => setCodeForAttempt(s, slug, attemptStartedAt, value, Date.now()))
+    setSaved({ code: value, ok })
+  }, [slug, attemptStartedAt])
 
   useEffect(() => {
     latest.current = code
@@ -34,5 +43,6 @@ export function useAutosave(slug: string, code: string): { saving: boolean; flus
     }
   }, [flush])
 
-  return { saving: savedCode !== code, flush }
+  const status: SaveStatus = !saved.ok ? 'failed' : saved.code !== code ? 'saving' : 'saved'
+  return { status, flush }
 }

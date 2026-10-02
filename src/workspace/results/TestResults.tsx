@@ -8,7 +8,7 @@ interface GroupProps {
   stage: number
   results: TestResult[]
   regression: boolean
-  onJump: (line: number) => void
+  onJump?: (line: number) => void
 }
 
 function StageGroup({ title, stage, results, regression, onJump }: GroupProps) {
@@ -68,7 +68,7 @@ export function TestResults({
   problem: Problem
   stage: number
   results: TestResult[]
-  onJump: (line: number) => void
+  onJump?: (line: number) => void
 }) {
   const order = [stage, ...Array.from({ length: stage - 1 }, (_, i) => i + 1)]
   return (
