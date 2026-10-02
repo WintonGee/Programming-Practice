@@ -26,7 +26,7 @@ pnpm e2e                 # Playwright end-to-end tests against a production buil
 ## Deploy
 
 ```sh
-pnpm deploy              # build + wrangler deploy (custom domain coding.wintongee.com)
+pnpm run deploy            # build + wrangler deploy (custom domain coding.wintongee.com)
 ```
 
 `wrangler.jsonc` serves `dist/` as static assets with SPA fallback and attaches the `coding.wintongee.com` custom domain (the zone is already on Cloudflare; the first deploy creates the DNS record).
