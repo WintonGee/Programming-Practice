@@ -4,10 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "pyodide": "node scripts/copy-pyodide.mjs",
+    "predev": "node scripts/copy-pyodide.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-pyodide.mjs",
     "build": "tsc -b && vite build",
+    "preview": "vite preview",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "verify:problems": "node scripts/verify-problems.mjs",
+    "e2e": "playwright test",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm verify:problems",
+    "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
