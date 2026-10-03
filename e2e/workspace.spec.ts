@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { PYTHON_TIMEOUT, readProblemFile, seedProgress, stageTitle } from './fixtures'
+import { PYTHON_TIMEOUT, pageScroll, readProblemFile, seedProgress, stageTitle } from './fixtures'
 
 const SLUG = 'session-timer'
 const stage1Solution = readProblemFile(`${SLUG}/stages/1/solution.py`)
+const infiniteLoop = `${stage1Solution}\n\nif __name__ == "__main__":\n    while True:\n        pass\n`
 
 test('passing stage 1 unlocks stage 2', async ({ page }) => {
   await seedProgress(page, SLUG, stage1Solution)
@@ -35,8 +36,7 @@ test('a syntax error shows the load-error banner with its line', async ({ page }
 
 test('an infinite loop times out and Python recovers for the next run', async ({ page }) => {
   test.setTimeout(120_000)
-  const code = `${stage1Solution}\n\nif __name__ == "__main__":\n    while True:\n        pass\n`
-  await seedProgress(page, SLUG, code)
+  await seedProgress(page, SLUG, infiniteLoop)
   await page.goto(`/p/${SLUG}`)
 
   await page.getByRole('button', { name: 'Run file' }).click()
@@ -84,8 +84,7 @@ test('shows a warning when the browser refuses to save code', async ({ page }) =
 
 test('a run queued behind a timed-out run still gets its full budget', async ({ page }) => {
   test.setTimeout(120_000)
-  const code = `${stage1Solution}\n\nif __name__ == "__main__":\n    while True:\n        pass\n`
-  await seedProgress(page, SLUG, code)
+  await seedProgress(page, SLUG, infiniteLoop)
   await page.goto(`/p/${SLUG}`)
 
   await page.getByRole('button', { name: 'Run file' }).click()
@@ -104,12 +103,7 @@ test('the workspace never scrolls as a page, only its panes do', async ({ page }
   await page.getByRole('button', { name: 'Run tests' }).click()
   await expect(page.getByTestId('results-summary')).toContainText('0 of 11 passing', { timeout: PYTHON_TIMEOUT })
 
-  const pageScroll = () =>
-    page.evaluate(() => ({
-      top: document.scrollingElement!.scrollTop,
-      overflow: document.scrollingElement!.scrollHeight - innerHeight,
-    }))
-  expect(await pageScroll()).toEqual({ top: 0, overflow: 0 })
+  expect(await pageScroll(page)).toEqual({ top: 0, overflow: 0 })
 
   // Wheel far past the end of every pane, then jump the editor to a traceback line.
   for (const pane of ['Results', 'Problem', 'Code']) {
@@ -117,6 +111,6 @@ test('the workspace never scrolls as a page, only its panes do', async ({ page }
     for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 600)
   }
   await page.getByRole('button', { name: /solution\.py, line \d+/ }).first().click()
-  expect(await pageScroll()).toEqual({ top: 0, overflow: 0 })
+  expect(await pageScroll(page)).toEqual({ top: 0, overflow: 0 })
   await expect(page.getByRole('banner')).toBeInViewport()
 })

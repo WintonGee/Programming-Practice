@@ -2,9 +2,9 @@
 
 Practice for **progressive coding interviews** — the CodeSignal / CoderPad format where you implement one class, pass its tests, and then the interviewer *evolves* the requirements in the next stage while the earlier tests keep running.
 
-Everything runs in the browser. Python executes in [Pyodide](https://pyodide.org) inside a web worker, so grading is deterministic, offline-capable, and needs no backend. Progress lives in `localStorage`.
+Python executes in the browser in [Pyodide](https://pyodide.org) inside a web worker, so grading is deterministic, offline-capable, and needs no backend. Progress lives in `localStorage`. The Teacher chat calls a small Cloudflare Worker API (`worker/`, `/api/tutor`) backed by Workers AI.
 
-Intended home: **https://coding.wintongee.com** (Cloudflare Workers static assets).
+Live at **https://coding.wintongee.com** (a Cloudflare Worker serving static assets plus `/api/*`).
 
 ## How it works
 
@@ -16,9 +16,12 @@ Intended home: **https://coding.wintongee.com** (Cloudflare Workers static asset
 
 ## Develop
 
+Requires Node 22.18+ (or 23.6+): `scripts/verify-problems.mjs` imports TypeScript sources directly and relies on Node's built-in type stripping.
+
 ```sh
 pnpm install
 pnpm dev                 # copies the Pyodide runtime into public/pyodide, then starts Vite
+pnpm dev:api             # production build + wrangler dev on :8787 (Worker API with the built site)
 pnpm check               # typecheck + lint + unit tests + content verification
 pnpm e2e                 # Playwright end-to-end tests against a local production build
 pnpm e2e:prod            # the same suite against https://coding.wintongee.com
@@ -30,7 +33,7 @@ pnpm e2e:prod            # the same suite against https://coding.wintongee.com
 pnpm run deploy            # build + wrangler deploy (custom domain coding.wintongee.com)
 ```
 
-`wrangler.jsonc` serves `dist/` as static assets with SPA fallback and attaches the `coding.wintongee.com` custom domain (the zone is already on Cloudflare; the first deploy creates the DNS record).
+`wrangler.jsonc` runs `worker/index.ts` for `/api/*` (the tutor: rate-limited, Workers AI via AI Gateway) and serves everything else from `dist/` as static assets with SPA fallback. It also attaches the `coding.wintongee.com` custom domain (the zone is already on Cloudflare; the first deploy creates the DNS record).
 
 ## Layout
 
@@ -40,6 +43,8 @@ src/runtime/python/           harness.py (FakeClock, raises) + runner.py (test r
 src/runtime/worker.ts         Pyodide web worker
 src/runtime/runner.ts         main-thread client with timeout + restart
 src/problems/                 content loader (import.meta.glob)
+src/tutor/                    Teacher chat client, context and history
+worker/                       Cloudflare Worker: /api/tutor (Workers AI, rate limit, SSE)
 scripts/verify-problems.mjs   proves every problem in Node + Pyodide
 ```
 

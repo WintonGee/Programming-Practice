@@ -8,6 +8,16 @@ export const LIMITS = {
   codeChars: 30_000,
   promptChars: 20_000,
   failures: 10,
+  summaryChars: 200,
+  titleChars: 200,
+  failureNameChars: 200,
+  failureDocChars: 500,
+  failureMessageChars: 2_000,
+  failureCodeChars: 500,
+  loadErrorChars: 2_000,
+  earlierStages: 10,
+  difficultyChars: 20,
+  bodyBytes: 200_000,
 } as const
 
 export type TutorMode = 'practice' | 'interview'

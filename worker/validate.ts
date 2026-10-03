@@ -36,16 +36,16 @@ function lastRun(v: unknown): LastRun | undefined {
   if (v === undefined) return undefined
   if (!isObj(v) || !Array.isArray(v.failures)) throw new InvalidRequest('invalid "lastRun"')
   return {
-    summary: str(v, 'summary', 200),
-    loadError: v.loadError === undefined ? undefined : str(v, 'loadError', 2_000),
+    summary: str(v, 'summary', LIMITS.summaryChars),
+    loadError: v.loadError === undefined ? undefined : str(v, 'loadError', LIMITS.loadErrorChars),
     failures: v.failures.slice(0, LIMITS.failures).map((f) => {
       if (!isObj(f)) throw new InvalidRequest('invalid failure')
       return {
         stage: int(f, 'stage'),
-        name: str(f, 'name', 200),
-        doc: str(f, 'doc', 500),
-        message: str(f, 'message', 2_000),
-        code: str(f, 'code', 500),
+        name: str(f, 'name', LIMITS.failureNameChars),
+        doc: str(f, 'doc', LIMITS.failureDocChars),
+        message: str(f, 'message', LIMITS.failureMessageChars),
+        code: str(f, 'code', LIMITS.failureCodeChars),
       }
     }),
   }
@@ -54,17 +54,17 @@ function lastRun(v: unknown): LastRun | undefined {
 function problem(c: Obj): ProblemContext {
   if (c.mode !== 'practice' && c.mode !== 'interview') throw new InvalidRequest('invalid "mode"')
   const earlier = c.earlierStages
-  if (!Array.isArray(earlier) || earlier.some((t) => typeof t !== 'string' || t.length > 200) || earlier.length > 10) {
+  if (!Array.isArray(earlier) || earlier.some((t) => typeof t !== 'string' || t.length > LIMITS.titleChars) || earlier.length > LIMITS.earlierStages) {
     throw new InvalidRequest('invalid "earlierStages"')
   }
   return {
     kind: 'problem',
     mode: c.mode,
-    problemTitle: str(c, 'problemTitle', 200),
-    difficulty: str(c, 'difficulty', 20),
+    problemTitle: str(c, 'problemTitle', LIMITS.titleChars),
+    difficulty: str(c, 'difficulty', LIMITS.difficultyChars),
     stageNumber: int(c, 'stageNumber'),
     stageCount: int(c, 'stageCount'),
-    stageTitle: str(c, 'stageTitle', 200),
+    stageTitle: str(c, 'stageTitle', LIMITS.titleChars),
     prompt: str(c, 'prompt', LIMITS.promptChars),
     earlierStages: earlier as string[],
     code: str(c, 'code', LIMITS.codeChars),

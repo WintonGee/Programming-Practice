@@ -1,4 +1,5 @@
-export type Difficulty = 'Easy' | 'Medium' | 'Hard'
+export const DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const
+export type Difficulty = (typeof DIFFICULTIES)[number]
 
 export interface Stage {
   /** 1-based stage number. */

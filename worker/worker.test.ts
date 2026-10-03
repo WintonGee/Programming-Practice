@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ProblemContext, TutorEvent } from '../src/tutor/protocol'
-import { gatewayOptions } from './index'
+import { gatewayOptions, isUnavailable, modelErrorMessage } from './index'
 import { buildSystemPrompt } from './prompt'
 import { toTutorEvents } from './sse'
 import { InvalidRequest, parseTutorRequest } from './validate'
@@ -142,5 +142,28 @@ describe('gatewayOptions', () => {
     const p = gatewayOptions(env, { context: problem, messages: [user('Why?')] })
     expect(p).toMatchObject({ skipCache: true, metadata: { context: 'problem', mode: 'practice', problem: 'Session Timer', stage: 2 } })
     expect(p.cacheTtl).toBeUndefined()
+  })
+})
+
+describe('isUnavailable', () => {
+  it('detects errors that should fall back to another model', () => {
+    for (const msg of ['403 Forbidden', 'AiError: 5035', 'requires a paid plan', 'no such model']) {
+      expect(isUnavailable(new Error(msg))).toBe(true)
+    }
+  })
+
+  it('does not fall back on other errors', () => {
+    expect(isUnavailable(new Error('timeout'))).toBe(false)
+  })
+})
+
+describe('modelErrorMessage', () => {
+  it('explains a used-up daily allowance', () => {
+    expect(modelErrorMessage(new Error('AiError: 4006: quota'))).toMatch(/allowance/)
+    expect(modelErrorMessage(new Error('you have used up your daily free allocation'))).toMatch(/allowance/)
+  })
+
+  it('falls back to a generic message', () => {
+    expect(modelErrorMessage(new Error('boom'))).toBe('The teacher is unavailable right now. Try again in a moment.')
   })
 })

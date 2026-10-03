@@ -2,10 +2,9 @@ import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { ReadOnlyCode } from '../../editor/ReadOnlyCode'
 import { plural } from '../../lib/format'
+import { countTests } from '../../problems/parse'
 import type { ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
-
-const countTests = (source: string) => (source.match(/^def test_/gm) ?? []).length
 
 export function TestsTab({ problem, progress }: { problem: Problem; progress: ProblemProgress }) {
   const unlocked = problem.stages.slice(0, progress.unlockedStage)

@@ -1,4 +1,4 @@
-import { StateEffect, StateField } from '@codemirror/state'
+import { StateEffect, StateField, type StateEffectType } from '@codemirror/state'
 import { Decoration, EditorView, type DecorationSet } from '@codemirror/view'
 
 export const setErrorLine = StateEffect.define<number | null>()
@@ -7,11 +7,11 @@ export const flashLine = StateEffect.define<number | null>()
 const errorMark = Decoration.line({ class: 'cm-errorLine' })
 const flashMark = Decoration.line({ class: 'cm-flashLine' })
 
-function lineField(effect: typeof setErrorLine, mark: Decoration, clearOnEdit: boolean) {
+function lineField(effect: StateEffectType<number | null>, mark: Decoration) {
   return StateField.define<DecorationSet>({
     create: () => Decoration.none,
     update(deco, tr) {
-      let next = clearOnEdit && tr.docChanged ? Decoration.none : deco.map(tr.changes)
+      let next = tr.docChanged ? Decoration.none : deco
       for (const e of tr.effects) {
         if (!e.is(effect)) continue
         const n = e.value
@@ -26,5 +26,5 @@ function lineField(effect: typeof setErrorLine, mark: Decoration, clearOnEdit: b
   })
 }
 
-/** Line backgrounds for the load-error line (cleared on edit) and jump-to-line flashes. */
-export const lineMarks = [lineField(setErrorLine, errorMark, true), lineField(flashLine, flashMark, true)]
+/** Line backgrounds for the load-error line and jump-to-line flashes; both clear on edit. */
+export const lineMarks = [lineField(setErrorLine, errorMark), lineField(flashLine, flashMark)]

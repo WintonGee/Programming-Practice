@@ -1,9 +1,8 @@
-import { TUTOR_ENDPOINT, type TutorRequest } from '../src/tutor/protocol'
+import { LIMITS, TUTOR_ENDPOINT, type TutorRequest } from '../src/tutor/protocol'
 import { buildSystemPrompt } from './prompt'
 import { toTutorEvents } from './sse'
 import { InvalidRequest, parseTutorRequest } from './validate'
 
-const MAX_BODY_BYTES = 200_000
 const MAX_ANSWER_TOKENS = 1_500
 
 const json = (status: number, error: string) => Response.json({ error }, { status })
@@ -13,7 +12,7 @@ function log(level: 'info' | 'warn' | 'error', message: string, fields: Record<s
 }
 
 /** Errors that mean "this model isn't available to this account", so a fallback model should be tried. */
-const isUnavailable = (err: unknown): boolean => /\b(403|5035|5007|5018)\b|paid plan|not found|no such model/i.test(String(err))
+export const isUnavailable = (err: unknown): boolean => /\b(403|5035|5007|5018)\b|paid plan|not found|no such model/i.test(String(err))
 
 /**
  * Every model call goes through AI Gateway for logs, analytics, retries, and caching.
@@ -34,6 +33,12 @@ export function gatewayOptions(env: Pick<Env, 'TUTOR_GATEWAY'>, req: TutorReques
         ? { app: 'staged', context: 'problem', mode: c.mode, problem: c.problemTitle, stage: c.stageNumber }
         : { app: 'staged', context: 'general' },
   }
+}
+
+export function modelErrorMessage(err: unknown): string {
+  return /\b4006\b|daily free allocation/i.test(String(err))
+    ? "Today's free Workers AI allowance for this site is used up. It resets at 00:00 UTC (or upgrade the Cloudflare account to Workers Paid)."
+    : 'The teacher is unavailable right now. Try again in a moment.'
 }
 
 async function runModel(env: Env, req: TutorRequest): Promise<{ model: string; stream: ReadableStream<Uint8Array> }> {
@@ -74,9 +79,9 @@ async function handleTutor(request: Request, env: Env): Promise<Response> {
   if (!success) return json(429, 'Too many questions in a short time. Wait a minute and try again.')
 
   const length = Number(request.headers.get('content-length') ?? '0')
-  if (length > MAX_BODY_BYTES) return json(413, 'That request is too large.')
+  if (length > LIMITS.bodyBytes) return json(413, 'That request is too large.')
   const raw = await request.text()
-  if (raw.length > MAX_BODY_BYTES) return json(413, 'That request is too large.')
+  if (raw.length > LIMITS.bodyBytes) return json(413, 'That request is too large.')
 
   let req: TutorRequest
   try {
@@ -94,10 +99,7 @@ async function handleTutor(request: Request, env: Env): Promise<Response> {
     })
   } catch (err) {
     log('error', 'tutor model failed', { error: String(err), ms: Date.now() - started })
-    const message = /\b4006\b|daily free allocation/i.test(String(err))
-      ? "Today's free Workers AI allowance for this site is used up. It resets at 00:00 UTC (or upgrade the Cloudflare account to Workers Paid)."
-      : 'The teacher is unavailable right now. Try again in a moment.'
-    return json(502, message)
+    return json(502, modelErrorMessage(err))
   }
 }
 

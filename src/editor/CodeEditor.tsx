@@ -1,7 +1,6 @@
 import { python } from '@codemirror/lang-python'
-import { indentUnit } from '@codemirror/language'
 import { lintGutter, setDiagnostics, type Diagnostic } from '@codemirror/lint'
-import { EditorState, Prec } from '@codemirror/state'
+import { Prec } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror'
 import { useImperativeHandle, useMemo, useRef, type Ref } from 'react'
@@ -42,8 +41,6 @@ export function CodeEditor({ value, onChange, ref }: Props) {
     () => [
       python(),
       editorTheme,
-      EditorState.tabSize.of(4),
-      indentUnit.of('    '),
       lintGutter(),
       lineMarks,
       // Run shortcuts are handled by a window listener; claim them here so the default keymap doesn't insert a line.

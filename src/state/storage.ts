@@ -17,3 +17,48 @@ export const safeStorage = {
     }
   },
 }
+
+/** One in-memory snapshot, mirrored to localStorage on every change and reloaded when another tab writes the key. */
+export function createStoredStore<T>(
+  key: string,
+  parse: (raw: string | null) => T,
+  serialize: (s: T) => string,
+): { read: () => T; update: (fn: (s: T) => T) => boolean; subscribe: (l: () => void) => () => void } {
+  let snapshot: T | null = null
+  let lastWriteOk = true
+  const listeners = new Set<() => void>()
+
+  const read = (): T => {
+    if (snapshot === null) snapshot = parse(safeStorage.getItem(key))
+    return snapshot
+  }
+
+  const emit = () => {
+    for (const l of listeners) l()
+  }
+
+  const update = (fn: (s: T) => T): boolean => {
+    const prev = read()
+    const next = fn(prev)
+    if (next === prev) return lastWriteOk
+    snapshot = next
+    lastWriteOk = safeStorage.setItem(key, serialize(next))
+    emit()
+    return lastWriteOk
+  }
+
+  const subscribe = (listener: () => void): (() => void) => {
+    listeners.add(listener)
+    return () => listeners.delete(listener)
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+      if (event.key !== key) return
+      snapshot = parse(event.newValue)
+      emit()
+    })
+  }
+
+  return { read, update, subscribe }
+}

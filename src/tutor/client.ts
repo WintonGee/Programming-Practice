@@ -1,17 +1,13 @@
+import { clip } from './clip'
 import { LIMITS, TUTOR_ENDPOINT, type ChatMessage, type TutorEvent, type TutorRequest } from './protocol'
 
-export const TRUNCATED = '\n… [truncated]'
-
-/** The Worker rejects bodies over 200 kB; stay under it with headroom for JSON escaping. */
-const MAX_BODY_BYTES = 180_000
+/** Stay under the Worker's LIMITS.bodyBytes with headroom for JSON escaping. */
+const MAX_BODY_BYTES = LIMITS.bodyBytes - 20_000
 
 export const RATE_LIMITED = 'You’re asking quickly — wait a minute and try again.'
 const UNAVAILABLE = 'The teacher is unavailable right now. Try again in a moment.'
 const OFFLINE = 'Couldn’t reach the teacher. Check your connection and try again.'
 const CUT_OFF = 'The answer stopped early. Try again.'
-
-export const clip = (text: string, max: number): string =>
-  text.length <= max ? text : text.slice(0, Math.max(0, max - TRUNCATED.length)) + TRUNCATED
 
 const bodyBytes = (request: TutorRequest) => new TextEncoder().encode(JSON.stringify(request)).length
 
@@ -26,21 +22,8 @@ function mergeTurns(messages: ChatMessage[]): ChatMessage[] {
   return out
 }
 
-/** Fit a request inside LIMITS: long fields are truncated with a marker, and the oldest messages are dropped first. */
+/** Fit the message history inside LIMITS and the body cap: merge same-role turns, clip each message, drop the oldest first. */
 export function trimRequest(request: TutorRequest): TutorRequest {
-  const { context } = request
-  const trimmedContext =
-    context.kind === 'general'
-      ? context
-      : {
-          ...context,
-          prompt: clip(context.prompt, LIMITS.promptChars),
-          code: clip(context.code, LIMITS.codeChars),
-          ...(context.lastRun && {
-            lastRun: { ...context.lastRun, failures: context.lastRun.failures.slice(0, LIMITS.failures) },
-          }),
-        }
-
   let messages = mergeTurns(request.messages)
     .slice(-LIMITS.messages)
     .map((m) => ({ role: m.role, content: clip(m.content, LIMITS.messageChars) }))
@@ -48,11 +31,11 @@ export function trimRequest(request: TutorRequest): TutorRequest {
     while (messages.length > 1 && messages[0].role !== 'user') messages = messages.slice(1)
   }
   startAtUser()
-  let trimmed: TutorRequest = { context: trimmedContext, messages }
+  let trimmed: TutorRequest = { context: request.context, messages }
   while (messages.length > 1 && bodyBytes(trimmed) > MAX_BODY_BYTES) {
     messages = messages.slice(1)
     startAtUser()
-    trimmed = { context: trimmedContext, messages }
+    trimmed = { context: request.context, messages }
   }
   return trimmed
 }

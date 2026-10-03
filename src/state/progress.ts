@@ -1,7 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { safeStorage } from './storage'
+import { createStoredStore } from './storage'
 
-export const STORAGE_KEY = 'staged:v1'
+const STORAGE_KEY = 'staged:v1'
 
 export type Mode = 'practice' | 'interview'
 
@@ -120,6 +120,8 @@ export function normalizeProgress(p: ProblemProgress, stageCount: number): Probl
   const prune = (m: Record<number, number>) =>
     Object.fromEntries(Object.entries(m).filter(([k]) => Number(k) <= count)) as Record<number, number>
   const stageCompletedAt = prune(p.attempt.stageCompletedAt)
+  const hintsRevealed = prune(p.attempt.hintsRevealed)
+  const solutionViewed = p.attempt.solutionViewed.filter((n) => n <= count)
   const done = allStagesCompleted(completedStages, count)
   const lastCompletion = Math.max(0, ...Object.values(stageCompletedAt))
   const finishedAt = done ? (p.attempt.finishedAt ?? (lastCompletion || p.updatedAt)) : undefined
@@ -127,18 +129,13 @@ export function normalizeProgress(p: ProblemProgress, stageCount: number): Probl
     unlockedStage === p.unlockedStage &&
     completedStages.length === p.completedStages.length &&
     finishedAt === p.attempt.finishedAt &&
-    Object.keys(p.attempt.stageCompletedAt).every((k) => Number(k) <= count) &&
-    Object.keys(p.attempt.hintsRevealed).every((k) => Number(k) <= count) &&
-    p.attempt.solutionViewed.every((n) => n <= count)
+    Object.keys(stageCompletedAt).length === Object.keys(p.attempt.stageCompletedAt).length &&
+    Object.keys(hintsRevealed).length === Object.keys(p.attempt.hintsRevealed).length &&
+    solutionViewed.length === p.attempt.solutionViewed.length
   ) {
     return p
   }
-  const attempt: Attempt = {
-    ...p.attempt,
-    stageCompletedAt,
-    hintsRevealed: prune(p.attempt.hintsRevealed),
-    solutionViewed: p.attempt.solutionViewed.filter((n) => n <= count),
-  }
+  const attempt: Attempt = { ...p.attempt, stageCompletedAt, hintsRevealed, solutionViewed }
   if (finishedAt === undefined) delete attempt.finishedAt
   else attempt.finishedAt = finishedAt
   return { ...p, unlockedStage, completedStages, attempt }
@@ -289,49 +286,15 @@ export function mostRecentInProgress(
   return best
 }
 
-// Store: one in-memory snapshot, mirrored to localStorage on every change.
+const store = createStoredStore(STORAGE_KEY, parseState, serializeState)
 
-let snapshot: ProgressState | null = null
-let lastWriteOk = true
-const listeners = new Set<() => void>()
-
-function read(): ProgressState {
-  if (!snapshot) snapshot = parseState(safeStorage.getItem(STORAGE_KEY))
-  return snapshot
-}
-
-function emit() {
-  for (const l of listeners) l()
-}
-
-export const getProgressState = read
+export const getProgressState = store.read
 
 /** Apply `fn` and persist. Returns whether the latest state is in storage (false if the browser refused the write). */
-export function updateProgress(fn: (state: ProgressState) => ProgressState): boolean {
-  const prev = read()
-  const next = fn(prev)
-  if (next === prev) return lastWriteOk
-  snapshot = next
-  lastWriteOk = safeStorage.setItem(STORAGE_KEY, serializeState(next))
-  emit()
-  return lastWriteOk
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key !== STORAGE_KEY) return
-    snapshot = parseState(event.newValue)
-    emit()
-  })
-}
+export const updateProgress: (fn: (state: ProgressState) => ProgressState) => boolean = store.update
 
 export function useProgressState(): ProgressState {
-  return useSyncExternalStore(subscribe, read, read)
+  return useSyncExternalStore(store.subscribe, store.read, store.read)
 }
 
 export function useProblemProgress(slug: string, stageCount: number): ProblemProgress | undefined {

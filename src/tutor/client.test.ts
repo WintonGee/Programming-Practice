@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { clip, RATE_LIMITED, readEvents, streamTutor, trimRequest, TRUNCATED } from './client'
+import { RATE_LIMITED, readEvents, streamTutor, trimRequest } from './client'
 import { LIMITS, type ChatMessage, type ProblemContext, type TutorEvent, type TutorRequest } from './protocol'
 
 const streamOf = (chunks: (string | Uint8Array)[]) => {
@@ -76,15 +76,6 @@ const problem = (over: Partial<ProblemContext> = {}): ProblemContext => ({
 const turns = (n: number, size = 10): ChatMessage[] =>
   Array.from({ length: n }, (_, i) => ({ role: i % 2 === 0 ? 'user' : 'assistant', content: `${i}:`.padEnd(size, 'x') }))
 
-describe('clip', () => {
-  it('leaves short text alone and truncates long text to the limit with a marker', () => {
-    expect(clip('abc', 5)).toBe('abc')
-    const out = clip('a'.repeat(100), 50)
-    expect(out).toHaveLength(50)
-    expect(out.endsWith(TRUNCATED)).toBe(true)
-  })
-})
-
 describe('trimRequest', () => {
   it('passes a small request through unchanged', () => {
     const req: TutorRequest = { context: problem(), messages: turns(3) }
@@ -98,21 +89,11 @@ describe('trimRequest', () => {
     expect(out.messages.at(-1)!.content).toMatch(new RegExp(`^${LIMITS.messages + 5}:`))
   })
 
-  it('truncates long messages, code, prompt and failures', () => {
-    const failure = { stage: 1, name: 't', doc: '', message: 'm', code: 'c' }
+  it('truncates long messages', () => {
     const out = trimRequest({
-      context: problem({
-        code: 'c'.repeat(LIMITS.codeChars + 10),
-        prompt: 'p'.repeat(LIMITS.promptChars + 10),
-        lastRun: { summary: '0 of 20 passing', failures: Array(20).fill(failure) },
-      }),
+      context: { kind: 'general' },
       messages: [{ role: 'user', content: 'q'.repeat(LIMITS.messageChars + 10) }],
     })
-    const ctx = out.context as ProblemContext
-    expect(ctx.code).toHaveLength(LIMITS.codeChars)
-    expect(ctx.code.endsWith(TRUNCATED)).toBe(true)
-    expect(ctx.prompt).toHaveLength(LIMITS.promptChars)
-    expect(ctx.lastRun!.failures).toHaveLength(LIMITS.failures)
     expect(out.messages[0].content).toHaveLength(LIMITS.messageChars)
   })
 
@@ -129,7 +110,7 @@ describe('trimRequest', () => {
 
   it('drops old messages until the body fits the Worker size cap', () => {
     const out = trimRequest({ context: problem(), messages: turns(LIMITS.messages + 1, LIMITS.messageChars) })
-    expect(JSON.stringify(out).length).toBeLessThan(200_000)
+    expect(JSON.stringify(out).length).toBeLessThan(LIMITS.bodyBytes)
     expect(out.messages.at(-1)!.role).toBe('user')
     expect(out.messages[0].role).toBe('user')
   })
