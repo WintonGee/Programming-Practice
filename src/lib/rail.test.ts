@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { StageState } from '../state/progress'
+import { emptyState, normalizeProgress, startAttempt, type StageState } from '../state/progress'
 import type { Problem, Stage } from '../types'
-import { railStages, railSummary, type RailStage } from './rail'
+import { currentStage, railStages, railSummary, type RailStage } from './rail'
 
 const rail = (states: StageState[]): RailStage[] => states.map((state, i) => ({ number: i + 1, title: `S${i + 1}`, state }))
 
@@ -30,5 +30,13 @@ describe('railSummary', () => {
 describe('railStages', () => {
   it('locks every stage without progress', () => {
     expect(railStages(problem, undefined).map((s) => s.state)).toEqual(['locked', 'locked'])
+  })
+})
+
+describe('currentStage', () => {
+  it('maps the 1-based unlocked stage to its stage definition', () => {
+    const progress = normalizeProgress(startAttempt(emptyState(), 'p', 'practice', '', 0).problems.p, 2)
+    expect(currentStage(problem, progress)).toBe(problem.stages[0])
+    expect(currentStage(problem, { ...progress, unlockedStage: 2 })).toBe(problem.stages[1])
   })
 })

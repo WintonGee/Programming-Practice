@@ -21,6 +21,8 @@ export function railSummary(stages: RailStage[]): string {
   return `Stage ${current?.number ?? 1} of ${stages.length}, ${passed} passed`
 }
 
+export const currentStage = (problem: Problem, progress: ProblemProgress) => problem.stages[progress.unlockedStage - 1]
+
 export const railStages = (problem: Problem, progress: ProblemProgress | undefined): RailStage[] =>
   problem.stages.map((s) => ({
     number: s.number,

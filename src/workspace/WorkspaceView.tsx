@@ -1,32 +1,24 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels'
 import type { CodeEditorHandle } from '../editor/CodeEditor'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { useIsMobile } from '../lib/useMediaQuery'
 import { python } from '../runtime/runner'
-import {
-  completeStage,
-  getProgressState,
-  isFinished,
-  markTimeUp,
-  normalizeProgress,
-  recordTestRun,
-  setCode,
-  unlockNextStage,
-  updateProgress,
-  type ProblemProgress,
-} from '../state/progress'
+import { isFinished, setCode, unlockNextStage, updateProgress, type ProblemProgress } from '../state/progress'
 import { safeStorage } from '../state/storage'
 import { buildProblemContext, summarizeRun } from '../tutor/context'
 import { TutorChat } from '../tutor/TutorChat'
-import type { LoadError, Problem } from '../types'
+import type { Problem } from '../types'
 import { EditorPane } from './EditorPane'
 import { Header, type Celebrate } from './Header'
 import { LeftPane, type LeftTab } from './left/LeftPane'
 import { MobileNav, type MobileView } from './MobileNav'
 import { ResultsPane } from './results/ResultsPane'
 import { TimeUpBanner } from './TimeUpBanner'
-import type { FileRunRecord, ResultsTab, RunKind, TestRunRecord } from './types'
+import { allTestsPassed, type ResultsTab } from './types'
 import { useAutosave } from './useAutosave'
+import { useInterviewDeadline } from './useInterviewDeadline'
+import { useRuns } from './useRuns'
 import { useRuntimeStatus } from './useRuntimeStatus'
 
 interface Props {
@@ -59,14 +51,6 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   const [arrivedStage, setArrivedStage] = useState<number | null>(null)
   const [celebrate, setCelebrate] = useState<Celebrate | null>(null)
   const [resultsTab, setResultsTab] = useState<ResultsTab>('tests')
-  const [testRun, setTestRun] = useState<TestRunRecord | null>(null)
-  const testRunRef = useRef(testRun)
-  useEffect(() => {
-    testRunRef.current = testRun
-  }, [testRun])
-  const [fileRun, setFileRun] = useState<FileRunRecord | null>(null)
-  const [running, setRunning] = useState<RunKind | null>(null)
-  const runningRef = useRef(false)
   const [mobileView, setMobileView] = useState<MobileView>('code')
   const [timeUpDismissed, setTimeUpDismissed] = useState(false)
 
@@ -74,9 +58,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     void python.warmUp().catch(() => {})
   }, [])
 
-  useEffect(() => {
-    document.title = `${problem.title} | Staged`
-  }, [problem.title])
+  useDocumentTitle(`${problem.title} | Staged`)
 
   useEffect(() => {
     if (!celebrate) return
@@ -84,89 +66,22 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     return () => clearTimeout(id)
   }, [celebrate])
 
-  // Interview countdown: record the moment time runs out, even if the tab is idle.
+  useInterviewDeadline(problem, progress)
   const { mode, attempt } = progress
-  useEffect(() => {
-    if (mode !== 'interview' || attempt.timeUpAt !== undefined || attempt.finishedAt !== undefined) return
-    const deadline = attempt.startedAt + problem.estimatedMinutes * 60_000
-    const fire = () => updateProgress((s) => markTimeUp(s, slug, deadline))
-    const wait = deadline - Date.now()
-    if (wait <= 0) {
-      fire()
-      return
-    }
-    const id = setTimeout(fire, Math.min(wait, 2 ** 31 - 1))
-    return () => clearTimeout(id)
-  }, [mode, attempt.timeUpAt, attempt.finishedAt, attempt.startedAt, problem.estimatedMinutes, slug])
 
-  const currentProgress = useCallback(() => {
-    const raw = getProgressState().problems[slug]
-    return raw ? normalizeProgress(raw, count) : null
-  }, [slug, count])
-
-  /** Mark the error line only if the editor still holds the code that produced it. */
-  const showRunError = (ranCode: string, error: LoadError | null) => {
-    const fresh = codeRef.current === ranCode
-    editor.current?.showError(
-      fresh && error?.line ? { line: error.line, column: error.column, message: error.message } : null,
-    )
-  }
-
-  const runTests = useCallback(async () => {
-    const p = currentProgress()
-    if (runningRef.current || !p) return
-    runningRef.current = true
-    flush()
-    const stage = p.unlockedStage
-    const attemptStartedAt = p.attempt.startedAt
-    const ranCode = codeRef.current
-    setRunning('tests')
-    setResultsTab('tests')
-    setMobileView('results')
-    updateProgress((s) => recordTestRun(s, slug, Date.now()))
-    const suites = problem.stages.slice(0, stage).map((s) => ({ stage: s.number, source: s.tests }))
-    const run = await python.runTests(ranCode, suites)
-    runningRef.current = false
-    setRunning(null)
-
-    // The attempt or stage moved on while Python was busy; this result no longer describes anything on screen.
-    const now = currentProgress()
-    if (!now || now.attempt.startedAt !== attemptStartedAt || now.unlockedStage !== stage) return
-
-    setTestRun({ run, stage, code: ranCode })
-    showRunError(ranCode, run.kind === 'ok' ? run.loadError : null)
-    if (run.kind === 'ok' && !run.loadError && run.results.length > 0 && run.results.every((r) => r.status === 'pass')) {
-      const alreadyDone = now.completedStages.includes(stage)
-      updateProgress((s) => completeStage(s, slug, { attemptStartedAt, stage, stageCount: count }, Date.now()))
+  const { running, testRun, fileRun, testRunRef, clearTestRun, currentProgress, runTests, runFile } = useRuns({
+    problem,
+    codeRef,
+    editor,
+    flush,
+    onRunStart: (kind) => {
+      setResultsTab(kind === 'tests' ? 'tests' : 'output')
+      setMobileView('results')
+    },
+    onStageComplete: (stage, alreadyDone) => {
       if (stage === count && !alreadyDone) setCelebrate({ fill: stage, arrive: null })
-    }
-  }, [slug, count, problem.stages, flush, currentProgress])
-
-  const runFile = useCallback(async () => {
-    if (runningRef.current) return
-    runningRef.current = true
-    flush()
-    setRunning('file')
-    setResultsTab('output')
-    setMobileView('results')
-    const ranCode = codeRef.current
-    const run = await python.runFile(ranCode)
-    runningRef.current = false
-    setRunning(null)
-    setFileRun({ run, code: ranCode })
-    showRunError(ranCode, run.kind === 'ok' ? run.error : null)
-  }, [flush])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey) || e.repeat) return
-      e.preventDefault()
-      if (e.shiftKey) void runFile()
-      else void runTests()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [runTests, runFile])
+    },
+  })
 
   const onContinue = () => {
     const from = progress.unlockedStage
@@ -175,7 +90,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
     setArrivedStage(from + 1)
     setViewStage(from + 1)
     setLeftTab('prompt')
-    setTestRun(null)
+    clearTestRun()
     setMobileView('prompt')
   }
 
@@ -199,7 +114,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
       problem={problem}
       progress={progress}
       celebrate={celebrate}
-      running={running}
+      running={running !== null}
       onRunTests={() => void runTests()}
       onRunFile={() => void runFile()}
       mobile={mobile}
@@ -276,14 +191,7 @@ export function WorkspaceView({ problem, progress, onStartOver }: Props) {
   )
 
   if (mobile) {
-    const badge =
-      testRun?.run.kind === 'ok' && !testRun.run.loadError
-        ? testRun.run.results.every((r) => r.status === 'pass')
-          ? 'pass'
-          : 'fail'
-        : testRun
-          ? 'fail'
-          : null
+    const badge = !testRun ? null : allTestsPassed(testRun.run) ? 'pass' : 'fail'
     return (
       <div className="flex h-dvh flex-col overflow-clip">
         {header}

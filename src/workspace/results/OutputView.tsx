@@ -30,10 +30,10 @@ export function OutputView({ record, onRetry, onJump }: Props) {
   if (run.kind === 'timeout') return <TimeoutBanner />
   if (run.kind === 'crash') return <CrashBanner message={run.message} onRetry={onRetry} />
 
-  const syntax = run.error && run.error.line != null
+  const located = run.error?.line != null ? run.error : null
   return (
     <div className="space-y-3">
-      {syntax && run.error && <LoadErrorBanner error={run.error} onJump={onJump} />}
+      {located && <LoadErrorBanner error={located} onJump={onJump} />}
       <div>
         <p className="mb-1 flex items-center justify-between text-xs text-muted">
           <span>Output</span>
@@ -43,7 +43,7 @@ export function OutputView({ record, onRetry, onJump }: Props) {
           {run.stdout || <span className="text-muted">No output.</span>}
         </pre>
       </div>
-      {run.error && !syntax && (
+      {run.error && !located && (
         <div role="alert" className="rounded-lg border border-fail/40 bg-fail-soft px-4 py-3">
           <p className="font-mono text-[13px] break-words whitespace-pre-wrap text-fail">{run.error.message}</p>
           {run.error.frames && run.error.frames.length > 0 && (

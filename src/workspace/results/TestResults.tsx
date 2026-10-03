@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import type { Problem, TestResult } from '../../types'
+import { passCount } from '../types'
 import { TestRow } from './TestRow'
 
 interface GroupProps {
@@ -12,7 +13,7 @@ interface GroupProps {
 }
 
 function StageGroup({ title, stage, results, regression, onJump }: GroupProps) {
-  const passing = results.filter((r) => r.status === 'pass').length
+  const passing = passCount(results)
   const allPass = passing === results.length
   const [open, setOpen] = useState(!regression || !allPass)
   const heading = (

@@ -7,7 +7,7 @@ import { isFinished, type ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
 import { tabIds } from '../tabIds'
 import { Tabs } from '../Tabs'
-import type { FileRunRecord, ResultsTab, RunKind, TestRunRecord } from '../types'
+import { passCount, type FileRunRecord, type ResultsTab, type RunKind, type TestRunRecord } from '../types'
 import { CrashBanner, LoadErrorBanner, TimeoutBanner } from './Banners'
 import { AllCompleteCard, StageCompleteCard } from './CompletionCard'
 import { OutputView } from './OutputView'
@@ -37,7 +37,7 @@ function Summary({ record, running }: { record: TestRunRecord | null; running: b
     const { run } = record
     if (run.loadError) content = <span className="font-medium text-fail">Code didn’t load</span>
     else {
-      const passing = run.results.filter((r) => r.status === 'pass').length
+      const passing = passCount(run.results)
       const all = passing === run.results.length && run.results.length > 0
       content = (
         <>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { railStages } from '../../lib/rail'
+import { currentStage, railStages } from '../../lib/rail'
 import { formatRelative } from '../../lib/format'
 import type { ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function ContinueCard({ problem, progress, now }: Props) {
-  const stage = problem.stages[progress.unlockedStage - 1]
+  const stage = currentStage(problem, progress)
   return (
     <section
       aria-labelledby="continue-heading"

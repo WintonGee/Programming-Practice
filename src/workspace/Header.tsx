@@ -7,7 +7,7 @@ import { ThemeToggle } from '../components/ThemeToggle'
 import { Kbd, Tooltip } from '../components/Tooltip'
 import { stagesThrough } from '../lib/format'
 import { shortcuts } from '../lib/platform'
-import { railStages } from '../lib/rail'
+import { currentStage, railStages } from '../lib/rail'
 import type { ProblemProgress } from '../state/progress'
 import type { Problem } from '../types'
 import { AttemptTimer } from './AttemptTimer'
@@ -22,7 +22,7 @@ interface Props {
   problem: Problem
   progress: ProblemProgress
   celebrate: Celebrate | null
-  running: 'tests' | 'file' | null
+  running: boolean
   onRunTests: () => void
   onRunFile: () => void
   mobile: boolean
@@ -49,7 +49,7 @@ const BackLink = () => (
 
 export function Header({ problem, progress, celebrate, running, onRunTests, onRunFile, mobile }: Props) {
   const stages = railStages(problem, progress)
-  const stage = problem.stages[progress.unlockedStage - 1]
+  const stage = currentStage(problem, progress)
   const rail = (
     <StageRail stages={stages} fillStage={celebrate?.fill ?? null} arriveStage={celebrate?.arrive ?? null} />
   )
@@ -96,7 +96,7 @@ export function Header({ problem, progress, celebrate, running, onRunTests, onRu
         <Tooltip label={<>Run solution.py as a script<Kbd>{shortcuts.runFile}</Kbd></>}>
           <Button
             onClick={onRunFile}
-            disabled={running !== null}
+            disabled={running}
             aria-keyshortcuts="Meta+Shift+Enter Control+Shift+Enter"
             icon={<SquareTerminal size={15} aria-hidden />}
           >
@@ -107,7 +107,7 @@ export function Header({ problem, progress, celebrate, running, onRunTests, onRu
           <Button
             variant="primary"
             onClick={onRunTests}
-            disabled={running !== null}
+            disabled={running}
             aria-keyshortcuts="Meta+Enter Control+Enter"
             icon={<Play size={14} fill="currentColor" aria-hidden />}
           >

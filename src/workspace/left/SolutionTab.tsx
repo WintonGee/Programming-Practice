@@ -4,11 +4,12 @@ import { Button } from '../../components/Button'
 import { InlineConfirm } from '../../components/InlineConfirm'
 import { ReadOnlyCode } from '../../editor/ReadOnlyCode'
 import { stagesThrough } from '../../lib/format'
+import { currentStage } from '../../lib/rail'
 import { markSolutionViewed, updateProgress, type ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
 
 export function SolutionTab({ problem, progress }: { problem: Problem; progress: ProblemProgress }) {
-  const stage = problem.stages[progress.unlockedStage - 1]
+  const stage = currentStage(problem, progress)
   const viewed = progress.attempt.solutionViewed.includes(stage.number)
   const [confirming, setConfirming] = useState(false)
   const [copied, setCopied] = useState<'ok' | 'failed' | null>(null)

@@ -1,11 +1,12 @@
 import { Lightbulb } from 'lucide-react'
 import { Button } from '../../components/Button'
+import { currentStage } from '../../lib/rail'
 import { revealHint, updateProgress, type ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
 import { Markdown } from '../../components/Markdown'
 
 export function HintsTab({ problem, progress }: { problem: Problem; progress: ProblemProgress }) {
-  const stage = problem.stages[progress.unlockedStage - 1]
+  const stage = currentStage(problem, progress)
   const total = stage.hints.length
   const shown = Math.min(progress.attempt.hintsRevealed[stage.number] ?? 0, total)
 
