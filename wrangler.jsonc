@@ -21,8 +21,9 @@
     "TUTOR_GATEWAY": "default",
     // Best quality for the price; requires the Workers Paid plan.
     "TUTOR_MODEL": "@cf/zai-org/glm-5.3-flash",
-    // Used if the primary model is unavailable on this account's plan.
-    "TUTOR_FALLBACK_MODEL": "@cf/zai-org/glm-4.7-flash"
+    // Used if the primary model is unavailable on this account's plan (Workers Free). Chosen by
+    // side-by-side tests against glm-4.7-flash, llama-3.3-70b-fast, nemotron-3-120b, and qwen3-30b.
+    "TUTOR_FALLBACK_MODEL": "@cf/google/gemma-4-26b-a4b-it"
   },
   "observability": {
     "enabled": true,
