@@ -8,6 +8,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadPyodide } from 'pyodide'
+import { countTests, parseProblem } from '../src/problems/parse.ts'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const problemsDir = join(root, 'problems')
@@ -15,43 +16,11 @@ const pythonDir = join(root, 'src/runtime/python')
 
 const read = (...parts) => readFileSync(join(...parts), 'utf8')
 
-function loadProblem(slug) {
-  const dir = join(problemsDir, slug)
-  const stagesDir = join(dir, 'stages')
-  const stageNums = readdirSync(stagesDir)
-    .map(Number)
-    .filter((n) => Number.isInteger(n))
-    .sort((a, b) => a - b)
-  stageNums.forEach((n, i) => {
-    if (n !== i + 1) throw new Error(`${slug}: stages must be numbered 1..N, found ${stageNums}`)
-  })
-  const meta = JSON.parse(read(dir, 'problem.json'))
-  for (const key of ['title', 'difficulty', 'order', 'tags', 'summary', 'estimatedMinutes']) {
-    if (!(key in meta)) throw new Error(`${slug}/problem.json: missing "${key}"`)
-  }
-  const stages = stageNums.map((n) => {
-    const sdir = join(stagesDir, String(n))
-    for (const f of ['prompt.md', 'stage.json', 'tests.py', 'solution.py']) {
-      if (!existsSync(join(sdir, f))) throw new Error(`${slug}/stages/${n}: missing ${f}`)
-    }
-    const stageMeta = JSON.parse(read(sdir, 'stage.json'))
-    if (!stageMeta.title || !Array.isArray(stageMeta.hints) || stageMeta.hints.length === 0) {
-      throw new Error(`${slug}/stages/${n}/stage.json: needs "title" and non-empty "hints"`)
-    }
-    return { n, tests: read(sdir, 'tests.py'), solution: read(sdir, 'solution.py') }
-  })
-  const placeholders = [
-    ['problem.json', JSON.stringify(meta)],
-    ['starter.py', read(dir, 'starter.py')],
-    ...stageNums.flatMap((n) =>
-      ['prompt.md', 'stage.json', 'tests.py', 'solution.py'].map((f) => [`stages/${n}/${f}`, read(stagesDir, String(n), f)]),
-    ),
-  ].filter(([, content]) => content.includes('TODO(author)'))
-  if (placeholders.length) {
-    throw new Error(`${slug}: unfinished placeholders in ${placeholders.map(([f]) => f).join(', ')}`)
-  }
-  return { slug, starter: read(dir, 'starter.py'), stages }
-}
+const files = Object.fromEntries(
+  readdirSync(problemsDir, { recursive: true })
+    .filter((path) => /^[^/]+\/.+\.(json|md|py)$/.test(path))
+    .map((path) => [path, read(problemsDir, path)]),
+)
 
 function summarize(results) {
   const failed = results.filter((r) => r.status !== 'pass')
@@ -70,7 +39,7 @@ async function main() {
   const runTests = pyodide.runPython('from runner import run_tests; run_tests')
 
   const run = (code, stages) => {
-    const suites = stages.map((s) => ({ stage: s.n, source: s.tests }))
+    const suites = stages.map((s) => ({ stage: s.number, source: s.tests }))
     const out = JSON.parse(runTests(code, JSON.stringify(suites)))
     if (out.loadError) throw new Error(`load error: ${JSON.stringify(out.loadError)}`)
     return summarize(out.results)
@@ -81,7 +50,15 @@ async function main() {
   for (const slug of slugs) {
     let problem
     try {
-      problem = loadProblem(slug)
+      const placeholders = Object.keys(files).filter(
+        (path) => path.startsWith(`${slug}/`) && files[path].includes('TODO(author)'),
+      )
+      if (placeholders.length) {
+        throw new Error(
+          `${slug}: unfinished placeholders in ${placeholders.map((path) => path.slice(slug.length + 1)).join(', ')}`,
+        )
+      }
+      problem = parseProblem(slug, files)
     } catch (e) {
       errors.push(e.message)
       continue
@@ -97,26 +74,26 @@ async function main() {
     }
 
     for (const stage of stages) {
-      const label = `${slug} stage ${stage.n}`
+      const label = `${slug} stage ${stage.number}`
       try {
-        const s = run(stage.solution, stages.slice(0, stage.n))
+        const s = run(stage.solution, stages.slice(0, stage.number))
         if (s.total === 0) errors.push(`${label}: no tests discovered`)
         for (const f of s.failed) {
           errors.push(`${label}: solution fails stage${f.stage}::${f.name} — ${f.message} (${f.code})`)
         }
         const counts = stages
-          .slice(0, stage.n)
-          .map((st) => `${(st.tests.match(/^def test_/gm) || []).length}`)
+          .slice(0, stage.number)
+          .map((st) => `${countTests(st.tests)}`)
           .join('+')
         console.log(`  ok  ${label}: ${s.total} tests (${counts})`)
       } catch (e) {
         errors.push(`${label}: ${e.message}`)
       }
-      const next = stages[stage.n]
+      const next = stages[stage.number]
       if (next) {
         try {
           const s = run(stage.solution, [next])
-          if (s.failed.length === 0) errors.push(`${label}: solution already passes stage ${next.n} — stage adds nothing`)
+          if (s.failed.length === 0) errors.push(`${label}: solution already passes stage ${next.number} — stage adds nothing`)
         } catch {
           // A load error on the next stage still means the next stage requires new work.
         }

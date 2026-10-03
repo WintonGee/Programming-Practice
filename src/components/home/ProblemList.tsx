@@ -2,13 +2,11 @@ import { Eye, Search, X } from 'lucide-react'
 import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { railStages } from '../../lib/rail'
-import { isFinished, normalizeProgress, type ProblemProgress, type ProgressState } from '../../state/progress'
-import type { Difficulty as Level, Problem } from '../../types'
+import { isFinished, useProblemProgress, type ProblemProgress } from '../../state/progress'
+import { DIFFICULTIES, type Difficulty as Level, type Problem } from '../../types'
 import { Button } from '../Button'
 import { Difficulty } from '../Difficulty'
 import { CompactRail } from '../StageRail'
-
-const LEVELS: readonly Level[] = ['Easy', 'Medium', 'Hard']
 
 function matches(p: Problem, query: string): boolean {
   const q = query.trim().toLowerCase()
@@ -23,7 +21,7 @@ function statusText(problem: Problem, progress: ProblemProgress | undefined): { 
   return { text: `Stage ${progress.unlockedStage} of ${count}`, tone: 'text-amber-text' }
 }
 
-export function ProblemList({ problems, state }: { problems: Problem[]; state: ProgressState }) {
+export function ProblemList({ problems }: { problems: Problem[] }) {
   const [query, setQuery] = useState('')
   const [level, setLevel] = useState<Level | null>(null)
   const searchId = useId()
@@ -52,7 +50,7 @@ export function ProblemList({ problems, state }: { problems: Problem[]; state: P
             />
           </div>
           <div role="group" aria-label="Filter by difficulty" className="flex self-start rounded-md border border-line bg-panel p-0.5">
-            {LEVELS.map((l) => (
+            {DIFFICULTIES.map((l) => (
               <button
                 key={l}
                 type="button"
@@ -102,11 +100,9 @@ export function ProblemList({ problems, state }: { problems: Problem[]; state: P
           </div>
         ) : (
           <ul>
-            {visible.map((p) => {
-              const raw = state.problems[p.slug]
-              const progress = raw ? normalizeProgress(raw, p.stages.length) : undefined
-              return <ProblemRow key={p.slug} problem={p} progress={progress} />
-            })}
+            {visible.map((p) => (
+              <ProblemRow key={p.slug} problem={p} />
+            ))}
           </ul>
         )}
       </div>
@@ -114,7 +110,8 @@ export function ProblemList({ problems, state }: { problems: Problem[]; state: P
   )
 }
 
-function ProblemRow({ problem, progress }: { problem: Problem; progress: ProblemProgress | undefined }) {
+function ProblemRow({ problem }: { problem: Problem }) {
+  const progress = useProblemProgress(problem.slug, problem.stages.length)
   const status = statusText(problem, progress)
   const count = problem.stages.length
   const solutionViewed = (progress?.attempt.solutionViewed.length ?? 0) > 0

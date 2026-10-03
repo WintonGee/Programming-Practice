@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { startAttempt, type ProblemProgress } from '../state/progress'
 import type { Problem, TestResult, TestRun } from '../types'
 import type { TestRunRecord } from '../workspace/types'
+import { TRUNCATED } from './clip'
 import { buildProblemContext, emptyState, summarizeRun } from './context'
 import { LIMITS } from './protocol'
 
@@ -112,6 +113,14 @@ describe('buildProblemContext', () => {
     expect(ctx.mode).toBe('interview')
     expect(ctx.earlierStages).toEqual([])
     expect('lastRun' in ctx).toBe(false)
+  })
+
+  it('clips long code and prompt to LIMITS', () => {
+    const longPrompt = { ...problem, stages: problem.stages.map((s) => ({ ...s, prompt: 'p'.repeat(LIMITS.promptChars + 10) })) }
+    const ctx = buildProblemContext({ problem: longPrompt, progress: progressAt(1), code: 'c'.repeat(LIMITS.codeChars + 10), testRun: null })
+    expect(ctx.code).toHaveLength(LIMITS.codeChars)
+    expect(ctx.code.endsWith(TRUNCATED)).toBe(true)
+    expect(ctx.prompt).toHaveLength(LIMITS.promptChars)
   })
 })
 

@@ -1,15 +1,12 @@
 import type { ProblemProgress } from '../state/progress'
 import type { LoadError, Problem } from '../types'
 import type { TestRunRecord } from '../workspace/types'
-import { clip } from './client'
+import { clip } from './clip'
 import { LIMITS, type LastRun, type ProblemContext, type TutorMode } from './protocol'
-
-/** Per-field caps the Worker enforces on test results; longer values are rejected, so clip them here. */
-const CAPS = { summary: 200, name: 200, doc: 500, message: 2_000, code: 500, loadError: 2_000, title: 200, earlierStages: 10 }
 
 function describeLoadError(e: LoadError): string {
   const where = e.line ? ` (line ${e.line})` : ''
-  return clip(`${e.message}${where}`, CAPS.loadError)
+  return clip(`${e.message}${where}`, LIMITS.loadErrorChars)
 }
 
 /** Summarize a test run for the teacher. Returns undefined for a run that belongs to another stage. */
@@ -17,7 +14,7 @@ export function summarizeRun(record: TestRunRecord | null, stage: number): LastR
   if (!record || record.stage !== stage) return undefined
   const { run } = record
   if (run.kind === 'timeout') return { summary: 'Timed out (possible infinite loop)', failures: [] }
-  if (run.kind === 'crash') return { summary: clip(`Run failed: ${run.message}`, CAPS.summary), failures: [] }
+  if (run.kind === 'crash') return { summary: clip(`Run failed: ${run.message}`, LIMITS.summaryChars), failures: [] }
   if (run.loadError) return { summary: 'Code didn’t load', failures: [], loadError: describeLoadError(run.loadError) }
   const passing = run.results.filter((r) => r.status === 'pass').length
   const failures = run.results
@@ -25,10 +22,10 @@ export function summarizeRun(record: TestRunRecord | null, stage: number): LastR
     .slice(0, LIMITS.failures)
     .map((r) => ({
       stage: r.stage,
-      name: clip(r.name, CAPS.name),
-      doc: clip(r.doc, CAPS.doc),
-      message: clip(r.message, CAPS.message),
-      code: clip(r.code, CAPS.code),
+      name: clip(r.name, LIMITS.failureNameChars),
+      doc: clip(r.doc, LIMITS.failureDocChars),
+      message: clip(r.message, LIMITS.failureMessageChars),
+      code: clip(r.code, LIMITS.failureCodeChars),
     }))
   return { summary: `${passing} of ${run.results.length} passing`, failures }
 }
@@ -47,16 +44,16 @@ export function buildProblemContext({ problem, progress, code, testRun }: Worksp
   return {
     kind: 'problem',
     mode: progress.mode,
-    problemTitle: clip(problem.title, CAPS.title),
+    problemTitle: clip(problem.title, LIMITS.titleChars),
     difficulty: problem.difficulty,
     stageNumber: stage.number,
     stageCount: problem.stages.length,
-    stageTitle: clip(stage.title, CAPS.title),
+    stageTitle: clip(stage.title, LIMITS.titleChars),
     prompt: clip(stage.prompt, LIMITS.promptChars),
     earlierStages: problem.stages
       .slice(0, stage.number - 1)
-      .slice(-CAPS.earlierStages)
-      .map((s) => clip(s.title, CAPS.title)),
+      .slice(-LIMITS.earlierStages)
+      .map((s) => clip(s.title, LIMITS.titleChars)),
     code: clip(code, LIMITS.codeChars),
     ...(lastRun && { lastRun }),
   }

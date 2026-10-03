@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { safeStorage } from '../state/storage'
+import { createStoredStore } from '../state/storage'
 import type { ChatMessage } from './protocol'
 
 export const HISTORY_KEY = 'staged:tutor:v1'
@@ -56,43 +56,17 @@ export function clearThread(state: HistoryState, thread: string): HistoryState {
   return { ...state, threads }
 }
 
-// Store: one in-memory snapshot, mirrored to localStorage on every change.
-
-let snapshot: HistoryState | null = null
-const listeners = new Set<() => void>()
-
-function read(): HistoryState {
-  if (!snapshot) snapshot = parseHistory(safeStorage.getItem(HISTORY_KEY))
-  return snapshot
-}
+const store = createStoredStore(HISTORY_KEY, parseHistory, JSON.stringify)
 
 export function updateHistory(fn: (state: HistoryState) => HistoryState) {
-  const prev = read()
-  const next = fn(prev)
-  if (next === prev) return
-  snapshot = next
-  safeStorage.setItem(HISTORY_KEY, JSON.stringify(next))
-  for (const l of listeners) l()
+  store.update(fn)
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key !== HISTORY_KEY) return
-    snapshot = parseHistory(event.newValue)
-    for (const l of listeners) l()
-  })
-}
-
-export const getThread = (thread: string): StoredMessage[] => read().threads[thread] ?? EMPTY
+export const getThread = (thread: string): StoredMessage[] => store.read().threads[thread] ?? EMPTY
 
 export function useThread(thread: string): StoredMessage[] {
   return useSyncExternalStore(
-    subscribe,
+    store.subscribe,
     () => getThread(thread),
     () => EMPTY,
   )

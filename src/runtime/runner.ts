@@ -12,11 +12,16 @@ type Pending = { resolve: (json: string) => void; reject: (err: Error) => void }
 
 class TimeoutError extends Error {}
 
+const failedRun = (err: unknown) =>
+  err instanceof TimeoutError
+    ? { kind: 'timeout' as const, ms: RUN_TIMEOUT_MS }
+    : { kind: 'crash' as const, message: err instanceof Error ? err.message : String(err) }
+
 /**
  * Owns the Pyodide web worker. Python runs off the main thread; a run that exceeds
  * RUN_TIMEOUT_MS terminates the worker and a fresh one boots for the next run.
  */
-export class PythonRuntime {
+class PythonRuntime {
   private worker: Worker | null = null
   private booted: Promise<void> | null = null
   private pending = new Map<number, Pending>()
@@ -142,8 +147,7 @@ export class PythonRuntime {
       const parsed = JSON.parse(json) as { loadError: LoadError | null; results: TestResult[] }
       return { kind: 'ok', ...parsed, ms: performance.now() - start }
     } catch (err) {
-      if (err instanceof TimeoutError) return { kind: 'timeout', ms: RUN_TIMEOUT_MS }
-      return { kind: 'crash', message: err instanceof Error ? err.message : String(err) }
+      return failedRun(err)
     }
   }
 
@@ -153,8 +157,7 @@ export class PythonRuntime {
       const parsed = JSON.parse(json) as { stdout: string; error: LoadError | null; ms: number }
       return { kind: 'ok', ...parsed }
     } catch (err) {
-      if (err instanceof TimeoutError) return { kind: 'timeout', ms: RUN_TIMEOUT_MS }
-      return { kind: 'crash', message: err instanceof Error ? err.message : String(err) }
+      return failedRun(err)
     }
   }
 }

@@ -1,5 +1,5 @@
 import { GraduationCap } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buttonClass } from '../components/buttonClass'
 import { ContinueCard } from '../components/home/ContinueCard'
@@ -9,9 +9,10 @@ import { Wordmark } from '../components/Wordmark'
 import { problems } from '../problems'
 import { mostRecentInProgress, useProgressState } from '../state/progress'
 
+const stageCounts = Object.fromEntries(problems.map((p) => [p.slug, p.stages.length]))
+
 export function Home() {
   const state = useProgressState()
-  const stageCounts = useMemo(() => Object.fromEntries(problems.map((p) => [p.slug, p.stages.length])), [])
   const recent = mostRecentInProgress(state, stageCounts)
   const recentProblem = recent ? problems.find((p) => p.slug === recent.slug) : undefined
   const [now] = useState(() => Date.now())
@@ -47,7 +48,7 @@ export function Home() {
 
         {recent && recentProblem && <ContinueCard problem={recentProblem} progress={recent.progress} now={now} />}
 
-        <ProblemList problems={problems} state={state} />
+        <ProblemList problems={problems} />
       </main>
       <footer className="border-t border-line">
         <p className="mx-auto max-w-5xl px-5 py-5 text-[13px] text-muted">

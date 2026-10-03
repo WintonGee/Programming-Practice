@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
+import type { StoredMessage } from '../src/tutor/history'
 import type { TutorRequest } from '../src/tutor/protocol'
-import { PYTHON_TIMEOUT, readProblemFile, seedProgress } from './fixtures'
+import { PYTHON_TIMEOUT, pageScroll, readProblemFile, seedHistory, seedProgress } from './fixtures'
 
 const SLUG = 'session-timer'
 const starter = readProblemFile(`${SLUG}/starter.py`)
@@ -18,33 +19,22 @@ const sseBody = (chunks = ANSWER_CHUNKS) =>
     .map((e) => `data: ${JSON.stringify(e)}\n\n`)
     .join('')
 
+const fulfillSse = (route: Route, chunks = ANSWER_CHUNKS) =>
+  route.fulfill({ status: 200, headers: { 'content-type': 'text/event-stream; charset=utf-8' }, body: sseBody(chunks) })
+
 /** Intercept the tutor endpoint; never hits a real model. Returns the captured request bodies. */
 async function mockTutor(page: Page, respond?: (route: Route) => Promise<void>) {
   const requests: TutorRequest[] = []
   await page.route('**/api/tutor', async (route) => {
     requests.push(route.request().postDataJSON() as TutorRequest)
     if (respond) return respond(route)
-    await route.fulfill({ status: 200, headers: { 'content-type': 'text/event-stream; charset=utf-8' }, body: sseBody() })
+    await fulfillSse(route)
   })
   return requests
 }
 
-async function seedHistory(page: Page, threads: Record<string, { id: string; role: string; content: string }[]>) {
-  await page.addInitScript((json) => {
-    if (sessionStorage.getItem('e2e-tutor-seeded')) return
-    localStorage.setItem('staged:tutor:v1', json)
-    sessionStorage.setItem('e2e-tutor-seeded', '1')
-  }, JSON.stringify({ version: 1, threads }))
-}
-
 const openTeacherTab = (page: Page) => page.getByRole('tab', { name: 'Teacher' }).click()
 const conversation = (page: Page) => page.getByRole('log', { name: 'Conversation with the teacher' })
-
-const pageOverflow = (page: Page) =>
-  page.evaluate(() => ({
-    top: document.scrollingElement!.scrollTop,
-    overflow: document.scrollingElement!.scrollHeight - innerHeight,
-  }))
 
 test('workspace Teacher tab streams a markdown answer with the stage, live code and mode as context', async ({ page }) => {
   const requests = await mockTutor(page)
@@ -104,7 +94,7 @@ test('a rate-limited question shows the wait message and can be retried', async 
   await mockTutor(page, async (route) => {
     calls++
     if (calls === 1) await route.fulfill({ status: 429, json: { error: 'Too many questions.' } })
-    else await route.fulfill({ status: 200, headers: { 'content-type': 'text/event-stream' }, body: sseBody() })
+    else await fulfillSse(route)
   })
   await seedProgress(page, SLUG, starter)
   await page.goto(`/p/${SLUG}`)
@@ -167,7 +157,7 @@ test('the /teacher page answers general questions', async ({ page }) => {
 
 test('a long conversation scrolls inside the chat, never the document', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 800 })
-  const long = (i: number) => ({
+  const long = (i: number): StoredMessage => ({
     id: `seed-${i}`,
     role: i % 2 === 0 ? 'user' : 'assistant',
     content: `Message ${i}. ${'A long line of explanation that wraps several times. '.repeat(12)}`,
@@ -179,16 +169,14 @@ test('a long conversation scrolls inside the chat, never the document', async ({
   await page.goto('/teacher')
   await expect(conversation(page).getByText('Message 39.')).toBeInViewport()
   for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 800)
-  expect(await pageOverflow(page)).toEqual({ top: 0, overflow: 0 })
-  const sh = await page.evaluate(() => document.scrollingElement!.scrollHeight === innerHeight)
-  expect(sh).toBe(true)
+  expect(await pageScroll(page)).toEqual({ top: 0, overflow: 0 })
 
   await page.goto(`/p/${SLUG}`)
   await openTeacherTab(page)
   await expect(conversation(page).getByText('Message 39.')).toBeInViewport()
   await conversation(page).hover()
   for (let i = 0; i < 20; i++) await page.mouse.wheel(0, 800)
-  expect(await pageOverflow(page)).toEqual({ top: 0, overflow: 0 })
+  expect(await pageScroll(page)).toEqual({ top: 0, overflow: 0 })
   await expect(page.getByRole('textbox', { name: 'Message the teacher' })).toBeInViewport()
 })
 
@@ -209,13 +197,7 @@ test('on mobile the composer stays above the bottom navigation', async ({ browse
 })
 
 test('math in an answer renders with KaTeX instead of raw LaTeX', async ({ page }) => {
-  await mockTutor(page, (route) =>
-    route.fulfill({
-      status: 200,
-      headers: { 'content-type': 'text/event-stream; charset=utf-8' },
-      body: sseBody(['A heap push is $O(\\log n)$, ', 'so insert $\\rightarrow$ heap.']),
-    }),
-  )
+  await mockTutor(page, (route) => fulfillSse(route, ['A heap push is $O(\\log n)$, ', 'so insert $\\rightarrow$ heap.']))
   await page.goto('/teacher')
   await page.getByRole('button', { name: 'When should I use a heap?' }).click()
   const log = conversation(page)

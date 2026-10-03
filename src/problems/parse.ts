@@ -1,9 +1,9 @@
-import type { Difficulty, Problem, Stage } from '../types'
-
-const DIFFICULTIES: readonly Difficulty[] = ['Easy', 'Medium', 'Hard']
+import { DIFFICULTIES, type Problem, type Stage } from '../types.ts'
 
 /** Raw file contents keyed by path relative to the problems directory, e.g. "session-timer/stages/1/tests.py". */
 export type ProblemFiles = Record<string, string>
+
+export const countTests = (source: string): number => (source.match(/^def test_/gm) ?? []).length
 
 export function parseProblems(files: ProblemFiles): Problem[] {
   const slugs = new Set<string>()
@@ -14,13 +14,16 @@ export function parseProblems(files: ProblemFiles): Problem[] {
   return [...slugs].map((slug) => parseProblem(slug, files)).sort((a, b) => a.order - b.order)
 }
 
-function parseProblem(slug: string, files: ProblemFiles): Problem {
+export function parseProblem(slug: string, files: ProblemFiles): Problem {
   const need = (rel: string): string => {
     const content = files[`${slug}/${rel}`]
     if (content === undefined) throw new Error(`problem "${slug}" is missing ${rel}`)
     return content
   }
   const meta = JSON.parse(need('problem.json')) as Omit<Problem, 'slug' | 'starter' | 'stages'>
+  for (const key of ['title', 'difficulty', 'order', 'tags', 'summary', 'estimatedMinutes']) {
+    if (!(key in meta)) throw new Error(`problem "${slug}" is missing "${key}" in problem.json`)
+  }
   if (!DIFFICULTIES.includes(meta.difficulty)) {
     throw new Error(`problem "${slug}" has invalid difficulty "${meta.difficulty}"`)
   }
@@ -38,6 +41,9 @@ function parseProblem(slug: string, files: ProblemFiles): Problem {
   const stages: Stage[] = sorted.map((number) => {
     const dir = `stages/${number}`
     const stageMeta = JSON.parse(need(`${dir}/stage.json`)) as { title: string; hints: string[] }
+    if (!stageMeta.title || !Array.isArray(stageMeta.hints) || stageMeta.hints.length === 0) {
+      throw new Error(`problem "${slug}" stage ${number} needs a title and non-empty hints`)
+    }
     return {
       number,
       title: stageMeta.title,
