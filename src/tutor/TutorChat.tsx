@@ -2,6 +2,7 @@ import { ArrowUp, CircleAlert, GraduationCap, RotateCcw, Square, Trash2 } from '
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Button } from '../components/Button'
 import { InlineConfirm } from '../components/InlineConfirm'
+import 'katex/dist/katex.min.css'
 import { Markdown } from '../components/Markdown'
 import { streamTutor } from './client'
 import { emptyState, type ChatScope } from './context'
@@ -197,7 +198,7 @@ export function TutorChat({ thread, getContext, scope, wide = false }: Props) {
                     </div>
                   ) : (
                     <AssistantMessage>
-                      <Markdown source={m.content} />
+                      <Markdown source={m.content} math />
                     </AssistantMessage>
                   )}
                 </li>
@@ -205,7 +206,7 @@ export function TutorChat({ thread, getContext, scope, wide = false }: Props) {
               {busy && (
                 <li>
                   <AssistantMessage>
-                    {streaming ? <Markdown source={streaming} /> : <TypingIndicator />}
+                    {streaming ? <Markdown source={streaming} math /> : <TypingIndicator />}
                   </AssistantMessage>
                 </li>
               )}

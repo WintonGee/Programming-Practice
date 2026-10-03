@@ -1,6 +1,8 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import { HighlightedCode } from '../editor/HighlightedCode'
 
 function codeText(children: ReactNode): { text: string; lang: string } | null {
@@ -39,10 +41,15 @@ const components: Components = {
   },
 }
 
-export function Markdown({ source }: { source: string }) {
+const plain = { remark: [remarkGfm], rehype: [] }
+const withMath = { remark: [remarkGfm, remarkMath], rehype: [rehypeKatex] }
+
+/** `math` renders $…$ LaTeX with KaTeX; model answers use it, authored problem content does not. */
+export function Markdown({ source, math = false }: { source: string; math?: boolean }) {
+  const plugins = math ? withMath : plain
   return (
     <div className="prose-stage">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={plugins.remark} rehypePlugins={plugins.rehype} components={components}>
         {source}
       </ReactMarkdown>
     </div>

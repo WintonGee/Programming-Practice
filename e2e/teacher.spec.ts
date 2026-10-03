@@ -207,3 +207,18 @@ test('on mobile the composer stays above the bottom navigation', async ({ browse
   expect(inputBox.y + inputBox.height).toBeLessThanOrEqual(navBox.y)
   await context.close()
 })
+
+test('math in an answer renders with KaTeX instead of raw LaTeX', async ({ page }) => {
+  await mockTutor(page, (route) =>
+    route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream; charset=utf-8' },
+      body: sseBody(['A heap push is $O(\\log n)$, ', 'so insert $\\rightarrow$ heap.']),
+    }),
+  )
+  await page.goto('/teacher')
+  await page.getByRole('button', { name: 'When should I use a heap?' }).click()
+  const log = conversation(page)
+  await expect(log.locator('.katex')).toHaveCount(2)
+  await expect(log).not.toContainText('$')
+})
