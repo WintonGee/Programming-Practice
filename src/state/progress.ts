@@ -267,6 +267,8 @@ export const markTimeUp = (state: ProgressState, slug: string, now: number): Pro
     p.attempt.timeUpAt === undefined ? { ...p, attempt: { ...p.attempt, timeUpAt: now } } : null,
   )
 
+export const interviewWindowMs = (estimatedMinutes: number): number => estimatedMinutes * 60_000
+
 export const totalHintsRevealed = (a: Attempt): number =>
   Object.values(a.hintsRevealed).reduce((sum, n) => sum + n, 0)
 

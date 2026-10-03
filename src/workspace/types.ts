@@ -1,4 +1,4 @@
-import type { FileRun, TestRun } from '../types'
+import type { FileRun, TestResult, TestRun } from '../types'
 
 export type RunKind = 'tests' | 'file'
 
@@ -16,3 +16,8 @@ export interface FileRunRecord {
 }
 
 export type ResultsTab = 'tests' | 'output'
+
+export const passCount = (results: TestResult[]) => results.filter((r) => r.status === 'pass').length
+
+export const allTestsPassed = (run: TestRun) =>
+  run.kind === 'ok' && !run.loadError && run.results.length > 0 && passCount(run.results) === run.results.length

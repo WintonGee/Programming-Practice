@@ -1,11 +1,12 @@
 import { GraduationCap } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buttonClass } from '../components/buttonClass'
 import { ContinueCard } from '../components/home/ContinueCard'
 import { ProblemList } from '../components/home/ProblemList'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Wordmark } from '../components/Wordmark'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { problems } from '../problems'
 import { mostRecentInProgress, useProgressState } from '../state/progress'
 
@@ -17,9 +18,7 @@ export function Home() {
   const recentProblem = recent ? problems.find((p) => p.slug === recent.slug) : undefined
   const [now] = useState(() => Date.now())
 
-  useEffect(() => {
-    document.title = 'Staged: progressive coding interview practice'
-  }, [])
+  useDocumentTitle('Staged: progressive coding interview practice')
 
   return (
     <div className="flex min-h-dvh flex-col">

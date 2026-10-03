@@ -1,6 +1,7 @@
+import { currentStage } from '../lib/rail'
 import type { ProblemProgress } from '../state/progress'
 import type { LoadError, Problem } from '../types'
-import type { TestRunRecord } from '../workspace/types'
+import { passCount, type TestRunRecord } from '../workspace/types'
 import { clip } from './clip'
 import { LIMITS, type LastRun, type ProblemContext, type TutorMode } from './protocol'
 
@@ -16,7 +17,7 @@ export function summarizeRun(record: TestRunRecord | null, stage: number): LastR
   if (run.kind === 'timeout') return { summary: 'Timed out (possible infinite loop)', failures: [] }
   if (run.kind === 'crash') return { summary: clip(`Run failed: ${run.message}`, LIMITS.summaryChars), failures: [] }
   if (run.loadError) return { summary: 'Code didn’t load', failures: [], loadError: describeLoadError(run.loadError) }
-  const passing = run.results.filter((r) => r.status === 'pass').length
+  const passing = passCount(run.results)
   const failures = run.results
     .filter((r) => r.status !== 'pass')
     .slice(0, LIMITS.failures)
@@ -39,7 +40,7 @@ export interface WorkspaceSnapshot {
 
 /** What the teacher sees: the current unlocked stage, the live editor code and the latest test run. */
 export function buildProblemContext({ problem, progress, code, testRun }: WorkspaceSnapshot): ProblemContext {
-  const stage = problem.stages[progress.unlockedStage - 1]
+  const stage = currentStage(problem, progress)
   const lastRun = summarizeRun(testRun, stage.number)
   return {
     kind: 'problem',

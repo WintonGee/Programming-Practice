@@ -1,7 +1,6 @@
 import type { TraceFrame } from '../../types'
 
-/** Traceback frames, innermost last. solution.py frames jump the editor to that line. */
-/** Without `onJump` (the editor changed since the run) frames render as plain text. */
+/** Traceback frames, innermost last. solution.py frames jump the editor to that line; without `onJump` (the editor changed since the run) they render as plain text. */
 export function Frames({ frames, onJump }: { frames: TraceFrame[]; onJump?: (line: number) => void }) {
   return (
     <div>

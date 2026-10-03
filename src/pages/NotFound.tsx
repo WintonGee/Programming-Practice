@@ -1,13 +1,11 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { buttonClass } from '../components/buttonClass'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Wordmark } from '../components/Wordmark'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 
 export function NotFound({ what = 'page' }: { what?: 'page' | 'problem' }) {
-  useEffect(() => {
-    document.title = 'Not found | Staged'
-  }, [])
+  useDocumentTitle('Not found | Staged')
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5">

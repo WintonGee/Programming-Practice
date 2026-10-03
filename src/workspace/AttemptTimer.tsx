@@ -1,11 +1,11 @@
 import { Clock, Hourglass } from 'lucide-react'
 import { formatClock } from '../lib/format'
 import { useNow } from '../lib/useNow'
-import type { ProblemProgress } from '../state/progress'
+import { interviewWindowMs, type ProblemProgress } from '../state/progress'
 
 export function AttemptTimer({ progress, estimatedMinutes }: { progress: ProblemProgress; estimatedMinutes: number }) {
   const { startedAt, finishedAt } = progress.attempt
-  const now = useNow(1000, finishedAt === undefined)
+  const now = useNow(finishedAt === undefined)
   const end = finishedAt ?? now
   const elapsed = Math.max(0, end - startedAt)
 
@@ -19,7 +19,7 @@ export function AttemptTimer({ progress, estimatedMinutes }: { progress: Problem
     )
   }
 
-  const remaining = estimatedMinutes * 60_000 - elapsed
+  const remaining = interviewWindowMs(estimatedMinutes) - elapsed
   const over = remaining < 0
   const low = !over && remaining < 5 * 60_000
   return (

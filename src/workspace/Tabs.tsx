@@ -12,11 +12,10 @@ interface Props<T extends string> {
   onChange: (id: T) => void
   label: string
   idPrefix: string
-  className?: string
 }
 
 /** WAI-ARIA tabs with roving focus (arrow keys, Home, End). */
-export function Tabs<T extends string>({ tabs, value, onChange, label, idPrefix, className = '' }: Props<T>) {
+export function Tabs<T extends string>({ tabs, value, onChange, label, idPrefix }: Props<T>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([])
   const onKeyDown = (e: KeyboardEvent, index: number) => {
     const last = tabs.length - 1
@@ -32,7 +31,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label, idPrefix,
     refs.current[next]?.focus()
   }
   return (
-    <div role="tablist" aria-label={label} className={`flex items-stretch gap-1 ${className}`}>
+    <div role="tablist" aria-label={label} className="flex items-stretch gap-1">
       {tabs.map((t, i) => {
         const selected = t.id === value
         const ids = tabIds(idPrefix, t.id)

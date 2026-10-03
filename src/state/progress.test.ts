@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   completeStage,
   emptyState,
+  interviewWindowMs,
   isFinished,
   markSolutionViewed,
   markTimeUp,
@@ -310,5 +311,12 @@ describe('mostRecentInProgress', () => {
     s = completeStage(s, 'a', { attemptStartedAt: T0, stage: 1, stageCount: 1 }, T0 + 30)
     expect(mostRecentInProgress(s, { a: 1, b: 3 })?.slug).toBe('b')
     expect(mostRecentInProgress(emptyState(), { a: 3 })).toBeNull()
+  })
+})
+
+describe('interviewWindowMs', () => {
+  it('converts the estimated minutes to milliseconds', () => {
+    expect(interviewWindowMs(45)).toBe(2_700_000)
+    expect(interviewWindowMs(0)).toBe(0)
   })
 })

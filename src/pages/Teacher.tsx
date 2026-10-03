@@ -1,14 +1,15 @@
 import { useEffect } from 'react'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Wordmark } from '../components/Wordmark'
+import { useDocumentTitle } from '../lib/useDocumentTitle'
 import { GENERAL_THREAD } from '../tutor/history'
 import { TutorChat } from '../tutor/TutorChat'
 
 const generalContext = () => ({ kind: 'general' }) as const
 
 export function Teacher() {
+  useDocumentTitle('Teacher | Staged')
   useEffect(() => {
-    document.title = 'Teacher | Staged'
     document.documentElement.classList.add('app-shell')
     return () => document.documentElement.classList.remove('app-shell')
   }, [])

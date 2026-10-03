@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { buttonClass } from '../../components/buttonClass'
 import { formatClock, formatDuration, plural, stagesThrough } from '../../lib/format'
-import { totalHintsRevealed, type ProblemProgress } from '../../state/progress'
+import { interviewWindowMs, totalHintsRevealed, type ProblemProgress } from '../../state/progress'
 import type { Problem } from '../../types'
 
 interface Props {
@@ -47,7 +47,7 @@ export function AllCompleteCard({ problem, progress }: { problem: Problem; progr
   const { attempt } = progress
   const end = attempt.finishedAt ?? attempt.stageCompletedAt[problem.stages.length] ?? attempt.startedAt
   const total = end - attempt.startedAt
-  const budget = problem.estimatedMinutes * 60_000
+  const budget = interviewWindowMs(problem.estimatedMinutes)
   const hints = totalHintsRevealed(attempt)
   const splits = problem.stages.map((s, i) => {
     const doneAt = attempt.stageCompletedAt[s.number]

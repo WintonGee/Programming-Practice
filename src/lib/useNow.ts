@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 
-/** Current epoch ms, re-rendering every `intervalMs` while `active`. */
-export function useNow(intervalMs = 1000, active = true): number {
+/** Current epoch ms, re-rendering every second while `active`. */
+export function useNow(active = true): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!active) return
-    const id = setInterval(() => setNow(Date.now()), intervalMs)
+    const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [intervalMs, active])
+  }, [active])
   return now
 }
